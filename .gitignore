@@ -1,0 +1,6 @@
+# Agent / AI tool folders (root level)
+.agent/
+.agents/
+claude/
+.cursor/
+cursor/
