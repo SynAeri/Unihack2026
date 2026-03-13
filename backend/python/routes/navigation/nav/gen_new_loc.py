@@ -1,8 +1,8 @@
 import os
 from supabase import create_client, Client
 #gets the info from the google docs
-url: str = os.environ.get("https://developers.google.com/maps/documentation")
-key: str = os.environ.get("?")
+url: str = os.environ.get("https://maps.googleapis.com/maps/api/place/nearbysearch/json")
+key: str = os.environ.get("AIzaSyBkCPN6Fa7qDphn2oteJrY-wXC66_4arpM")
 supabase: Client = create_client(url, key)
 
 # for the client to input their keyword
@@ -16,3 +16,8 @@ response = (
 )
 
 #for item in data 
+data = response.data
+
+print(keyword)
+for row in data:
+    print(f"name: {row["name"]}, location :{row["loc"]}")
