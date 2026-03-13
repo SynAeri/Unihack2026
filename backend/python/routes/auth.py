@@ -9,10 +9,10 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/login", response_model=UserResponse)
 async def login(request: LoginRequest):
-    """
-    Mock login using username only.
-    Creates user if not exists, returns user if exists.
-    """
+    
+    # Mock login using username only.
+    # Creates user if not exists, returns user if exists.
+    
     username = request.username.strip()
 
     if not username:
