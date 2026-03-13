@@ -108,3 +108,17 @@ class DebugSeedSlimeRequest(BaseModel):
 class DebugSetStateRequest(BaseModel):
     slime_id: str
     state: str
+
+# Bucket Schema
+
+class SlimeAssets(BaseModel):
+    id: str
+    user_id: str
+    asset_type: str
+    asset_role: str 
+    bucket_name: str 
+    storage_path: str 
+    name: str
+    is_active: bool
+
+    
