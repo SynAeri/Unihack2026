@@ -1,0 +1,46 @@
+@import "tailwindcss";
+@import "uniwind";
+@import "heroui-native/styles";
+
+@source "./node_modules/heroui-native/lib";
+
+@layer theme {
+  @variant dark {
+    --background: #070B14;
+    --foreground: #E2E8F0;
+    --muted: #94A3B8;
+
+    --surface: #0F1629;
+    --surface-foreground: #E2E8F0;
+    --surface-secondary: #1A2235;
+    --surface-secondary-foreground: #E2E8F0;
+    --surface-tertiary: #243044;
+    --surface-tertiary-foreground: #E2E8F0;
+
+    --overlay: #0F1629;
+    --overlay-foreground: #E2E8F0;
+
+    --default: #1A2235;
+    --default-foreground: #E2E8F0;
+
+    --accent: #7DFFA0;
+    --accent-foreground: #070B14;
+
+    --success: #7DFFA0;
+    --success-foreground: #070B14;
+
+    --border: #1A2235;
+    --separator: #1A2235;
+  }
+}
+
+@theme inline {
+  --color-tamagotchi: #7DFFA0;
+  --color-tamagotchi-dim: #2A6B42;
+  --color-cyan-glow: #4EECFF;
+  --color-orchid: #C084FC;
+  --color-abyss: #070B14;
+  --color-deep: #0F1629;
+  --color-soft-white: #E2E8F0;
+  --color-mist: #94A3B8;
+}

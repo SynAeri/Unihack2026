@@ -1,6 +1,6 @@
 # Agent / AI tool folders (root level)
 .agent/
 .agents/
-claude/
+.claude/
 .cursor/
-cursor/
+skills-lock.json
