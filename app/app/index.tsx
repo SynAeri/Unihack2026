@@ -4,7 +4,6 @@ import { useRouter } from "expo-router";
 import { useCameraPermissions } from "expo-camera";
 import * as Location from "expo-location";
 import { Ionicons } from "@expo/vector-icons";
-import { Button } from "heroui-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -13,6 +12,9 @@ import Animated, {
   FadeInLeft,
   ReduceMotion,
 } from "react-native-reanimated";
+import { Pressable } from "react-native";
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 import { Primary, SHELL_PX } from "@/components/ui/Primary";
 import { Paginator } from "@/components/onboarding/Paginator";
 import { TamagotchiBlob } from "@/components/onboarding/TamagotchiBlob";
@@ -223,57 +225,25 @@ export default function OnboardingScreen() {
 
         <View style={{ height: 56 }}>
           {/* Back */}
-          <Animated.View
-            style={[
-              backBtnStyle,
-              {
-                position: "absolute",
-                left: 0,
-                height: 56,
-                overflow: "hidden",
-              },
-            ]}
+          <AnimatedPressable
+            onPress={handleBack}
+            style={[backBtnStyle, s.backBtn]}
           >
-            <Button
-              variant="secondary"
-              size="lg"
-              className="w-full h-full"
-              onPress={handleBack}
-            >
-              <Button.Label>Back</Button.Label>
-            </Button>
-          </Animated.View>
+            <Text style={s.backBtnText}>Back</Text>
+          </AnimatedPressable>
 
           {/* Main */}
-          <Animated.View
-            style={[
-              mainBtnStyle,
-              {
-                position: "absolute",
-                right: 0,
-                height: 56,
-                overflow: "hidden",
-              },
-            ]}
+          <AnimatedPressable
+            onPress={isMainDisabled ? undefined : handleNext}
+            style={[mainBtnStyle, s.mainBtn, isMainDisabled && s.mainBtnDisabled]}
           >
-            <Button
-              variant="primary"
-              size="lg"
-              className="w-full h-full"
-              isDisabled={isMainDisabled}
-              onPress={handleNext}
-            >
-              {isLast && (
-                <Animated.View
-                  entering={FadeInLeft.springify()}
-                  style={s.checkBadge}
-                >
-                  <Ionicons name="checkmark" size={14} color="#7DFFA0" />
-                </Animated.View>
-              )}
-              <Button.Label className="font-bold">{btnLabel}</Button.Label>
-            </Button>
-          </Animated.View>
+            {isLast && (
+              <Animated.View entering={FadeInLeft.springify()} style={s.checkBadge}>
+                <Ionicons name="checkmark" size={14} color="#7DFFA0" />
+              </Animated.View>
+            )}
+            <Text style={s.mainBtnText}>{btnLabel}</Text>
+          </AnimatedPressable>
         </View>
       </View>
     </Primary>
@@ -302,5 +272,38 @@ const s = StyleSheet.create({
     backgroundColor: "#070B14",
     alignItems: "center",
     justifyContent: "center",
+  },
+  mainBtn: {
+    position: "absolute",
+    right: 0,
+    height: 56,
+    borderRadius: 30,
+    backgroundColor: "#7DFFA0",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  mainBtnDisabled: {
+    opacity: 0.4,
+  },
+  mainBtnText: {
+    color: "#070B14",
+    fontWeight: "700",
+    fontSize: 16,
+  },
+  backBtn: {
+    position: "absolute",
+    left: 0,
+    height: 56,
+    borderRadius: 30,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  backBtnText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 16,
   },
 });
