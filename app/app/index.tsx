@@ -13,10 +13,10 @@ import Animated, {
   FadeInLeft,
   ReduceMotion,
 } from "react-native-reanimated";
-import { ScreenShell, SHELL_PX } from "@/components/ui/ScreenShell";
-import { Paginator } from "@/components/ui/Paginator";
-import { TamagotchiBlob } from "@/components/TamagotchiBlob";
-import { PermissionRow } from "@/components/ui/PermissionRow";
+import { Primary, SHELL_PX } from "@/components/ui/Primary";
+import { Paginator } from "@/components/onboarding/Paginator";
+import { TamagotchiBlob } from "@/components/onboarding/TamagotchiBlob";
+import { PermissionRow } from "@/components/onboarding/PermissionRow";
 import { getOrCreateDeviceId } from "@/lib/device";
 
 const { width: SW } = Dimensions.get("window");
@@ -105,7 +105,7 @@ export default function OnboardingScreen() {
   const isMainDisabled = isLast && !bothGranted;
 
   return (
-    <ScreenShell>
+    <Primary>
       <View style={{ flex: 1, marginHorizontal: -SHELL_PX }}>
         <Animated.ScrollView
           ref={scrollRef}
@@ -276,7 +276,7 @@ export default function OnboardingScreen() {
           </Animated.View>
         </View>
       </View>
-    </ScreenShell>
+    </Primary>
   );
 }
 

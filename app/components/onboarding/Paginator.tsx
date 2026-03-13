@@ -4,7 +4,7 @@ import Animated, {
   interpolate,
   SharedValue,
 } from "react-native-reanimated";
-import { Dot, DOT_SIZE } from "./Dot";
+import { Dot, DOT_SIZE } from "@/components/ui/Dot";
 
 const GAP = DOT_SIZE * 2;
 const PROGRESS_SIZE = DOT_SIZE * 2.6;

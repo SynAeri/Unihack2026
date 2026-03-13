@@ -5,7 +5,7 @@ import { GrainyBackground } from "@/components/ui/GrainyBackground";
 
 export const SHELL_PX = 24;
 
-export function ScreenShell({ children }: { children: ReactNode }) {
+export function Primary({ children }: { children: ReactNode }) {
   return (
     <View className="flex-1 bg-background">
       <GrainyBackground
