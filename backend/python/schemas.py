@@ -109,16 +109,17 @@ class DebugSetStateRequest(BaseModel):
     slime_id: str
     state: str
 
-# Bucket Schema
-
-class SlimeAssets(BaseModel):
+# Storage / asset schemas (aligned with task2.md)
+class SlimeAssetResponse(BaseModel):
     id: str
     user_id: str
+    slime_id: str
     asset_type: str
-    asset_role: str 
-    bucket_name: str 
-    storage_path: str 
-    name: str
+    asset_role: Optional[str] = None
+    bucket_name: str
+    storage_path: str
+    file_name: Optional[str] = None
+    mime_type: Optional[str] = None
     is_active: bool
+    created_at: str
 
-    
