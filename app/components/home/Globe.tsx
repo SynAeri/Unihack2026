@@ -124,7 +124,7 @@ if (Platform.OS !== "web") {
 
 // ---------------------------------------------------------------------------
 
-const SLIME_GLB = require("../../assets/images/slime.glb");
+const SLIME_GLB = require("../../assets/templates/slime/slime.glb");
 
 function loadArrayBuffer(uri: string): Promise<ArrayBuffer> {
   return new Promise((resolve, reject) => {
