@@ -3,7 +3,6 @@ import { View, StyleSheet, ViewStyle } from "react-native";
 import { GLView } from "expo-gl";
 import { LinearGradient } from "expo-linear-gradient";
 import { Asset } from "expo-asset";
-import { Renderer } from "expo-three";
 import {
   Scene,
   PerspectiveCamera,
@@ -13,17 +12,28 @@ import {
   MeshBasicMaterial,
   Box3,
   Vector3,
+  WebGLRenderer,
 } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { GrainyBackground } from "@/components/ui/GrainyBackground";
 
-const SLIME_GLB = require("@/assets/images/Meshy_AI_Green_Jelly_Slime_0314055224_texture.glb");
+const SLIME_GLB = require("../../assets/images/Meshy_AI_Green_Jelly_Slime_0314055224_texture.glb");
 
 export function Globe({ style }: { style?: ViewStyle }) {
   const rafRef = useRef<number | null>(null);
 
   const onContextCreate = useCallback((gl: any) => {
-    const renderer = new Renderer({ gl });
+    const renderer = new WebGLRenderer({
+      canvas: {
+        width: gl.drawingBufferWidth,
+        height: gl.drawingBufferHeight,
+        style: {},
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        clientHeight: gl.drawingBufferHeight,
+      } as any,
+      context: gl,
+    });
     renderer.setSize(gl.drawingBufferWidth, gl.drawingBufferHeight);
     renderer.setClearColor(0x000000, 0);
 
