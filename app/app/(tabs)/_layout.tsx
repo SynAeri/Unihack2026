@@ -26,10 +26,6 @@ export default function TabsLayout() {
         <Icon sf={{ default: "house", selected: "house.fill" }} />
         <Label>Home</Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="explore">
-        <Icon sf={{ default: "map", selected: "map.fill" }} />
-        <Label>Explore</Label>
-      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="scan">
         <Icon sf={{ default: "viewfinder", selected: "viewfinder" }} />
         <Label>Scan</Label>
