@@ -1,5 +1,9 @@
 import { Platform, DynamicColorIOS } from "react-native";
-import { NativeTabs } from "expo-router/unstable-native-tabs";
+import {
+  NativeTabs,
+  Icon,
+  Label,
+} from "expo-router/unstable-native-tabs";
 
 const tintColor =
   Platform.OS === "ios"
@@ -19,25 +23,12 @@ export default function TabsLayout() {
       }
     >
       <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Icon
-          sf={{ default: "house", selected: "house.fill" }}
-          md="home"
-        />
-        <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="explore">
-        <NativeTabs.Trigger.Icon
-          sf={{ default: "map", selected: "map.fill" }}
-          md="explore"
-        />
-        <NativeTabs.Trigger.Label>Explore</NativeTabs.Trigger.Label>
+        <Icon sf={{ default: "house", selected: "house.fill" }} />
+        <Label>Home</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="scan">
-        <NativeTabs.Trigger.Icon
-          sf={{ default: "viewfinder", selected: "viewfinder" }}
-          md="qr_code_scanner"
-        />
-        <NativeTabs.Trigger.Label>Scan</NativeTabs.Trigger.Label>
+        <Icon sf={{ default: "viewfinder", selected: "viewfinder" }} />
+        <Label>Scan</Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );

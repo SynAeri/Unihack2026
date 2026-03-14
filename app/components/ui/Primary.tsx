@@ -10,7 +10,6 @@ export function Primary({ children }: { children: ReactNode }) {
     <View className="flex-1 bg-background">
       <GrainyBackground
         colors={["#070B14", "#7DFFA0", "#4EECFF", "#C084FC", "#070B14"]}
-        speed={1.5}
         intensity={0.08}
         amplitude={0.12}
         brightness={-0.1}

@@ -7,12 +7,7 @@ import {
   Shader,
   type SkRuntimeEffect,
 } from "@shopify/react-native-skia";
-import {
-  useSharedValue,
-  useDerivedValue,
-  useFrameCallback,
-  type FrameInfo,
-} from "react-native-reanimated";
+import { useDerivedValue } from "react-native-reanimated";
 import { useWindowDimensions } from "react-native";
 import type { StyleProp, ViewStyle } from "react-native";
 
@@ -187,8 +182,6 @@ interface GrainyBackgroundProps {
   width?: number;
   height?: number;
   colors?: GrainyGradientColors;
-  speed?: number;
-  animated?: boolean;
   intensity?: number;
   size?: number;
   enabled?: boolean;
@@ -221,8 +214,6 @@ export const GrainyBackground = memo<GrainyBackgroundProps>(
     width: paramsWidth,
     height: paramsHeight,
     colors = ["#5b0bb5", "#7c3aed", "#fb923c", "#db2777"],
-    speed = 2.9,
-    animated = true,
     intensity = 0.112,
     size = 1.9,
     enabled = true,
@@ -237,13 +228,6 @@ export const GrainyBackground = memo<GrainyBackgroundProps>(
       () => Skia.RuntimeEffect.Make(GRAINY_GRADIENT_SHADER),
       [],
     );
-    const progress = useSharedValue<number>(0);
-
-    useFrameCallback((info: FrameInfo) => {
-      if (animated && info.timeSincePreviousFrame) {
-        progress.value += (info.timeSincePreviousFrame / 1000) * speed;
-      }
-    }, animated);
 
     const parsedColors = useMemo(() => {
       const result: [number, number, number, number][] = [];
@@ -254,7 +238,7 @@ export const GrainyBackground = memo<GrainyBackgroundProps>(
     }, [colors]);
     const uniforms = useDerivedValue(() => ({
       iResolution: [width, height],
-      iTime: progress.value,
+      iTime: 0,
       uColor0: parsedColors[0],
       uColor1: parsedColors[1],
       uColor2: parsedColors[2],
