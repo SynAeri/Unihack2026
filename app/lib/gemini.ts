@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { EncodingType, readAsStringAsync } from "expo-file-system/legacy";
 
-const GEMINI_API_KEY = "AIzaSyDnluyyayPtXtF7M3bYWNf1-4BYXVrKk1w";
+const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY || "";
 
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
