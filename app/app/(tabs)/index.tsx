@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import Animated, { FadeInUp, FadeInDown } from "react-native-reanimated";
+import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { SHELL_PX } from "@/components/ui/Primary";
 import { Globe } from "@/components/home/Globe";
@@ -9,6 +10,7 @@ import { AnimatedProgressBar } from "@/components/ui/organisms/progress";
 const PET_NAME = "Blobby";
 const HEALTH = 0.85;
 const HAPPINESS = 0.72;
+const BOND_LEVEL = 1;
 
 export default function HomeTab() {
   return (
@@ -23,7 +25,23 @@ export default function HomeTab() {
         <Text style={s.name}>{PET_NAME}</Text>
         <Text style={s.personality}>Curious & Playful</Text>
 
-        {/* Health & Happiness bars — between personality and tab bar */}
+        {/* Bond level badge — above bars */}
+        <Animated.View entering={FadeInDown.delay(180).springify()} style={s.bondWrapper}>
+          <LinearGradient
+            colors={["rgba(125,255,160,0.12)", "rgba(125,255,160,0.04)"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={s.bondPill}
+          >
+            <View style={s.bondInner}>
+              <Ionicons name="sparkles" size={14} color="#7DFFA0" style={{ opacity: 0.9 }} />
+              <Text style={s.bondLabel}>BOND</Text>
+              <Text style={s.bondValue}>{BOND_LEVEL}</Text>
+            </View>
+          </LinearGradient>
+        </Animated.View>
+
+        {/* Health & Happiness bars */}
         <View style={s.bars}>
           <View style={s.barRow}>
             <Ionicons name="heart" size={16} color="#ff6b6b" />
@@ -83,8 +101,37 @@ const s = StyleSheet.create({
     marginTop: 6,
     letterSpacing: 1,
   },
+  bondWrapper: {
+    marginTop: 18,
+    alignSelf: "center",
+  },
+  bondPill: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(125,255,160,0.25)",
+    overflow: "hidden",
+  },
+  bondInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  bondLabel: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "700",
+    letterSpacing: 3,
+  },
+  bondValue: {
+    color: "#7DFFA0",
+    fontSize: 20,
+    fontWeight: "800",
+    letterSpacing: 1,
+  },
   bars: {
-    marginTop: 20,
+    marginTop: 18,
     width: "100%",
     gap: 12,
   },
