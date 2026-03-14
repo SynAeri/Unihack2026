@@ -1,8 +1,9 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { View, Text, Dimensions, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { useCameraPermissions } from "expo-camera";
 import * as Location from "expo-location";
+import * as SecureStore from "expo-secure-store";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, {
   useSharedValue,
@@ -21,6 +22,8 @@ import { TamagotchiBlob } from "@/components/onboarding/TamagotchiBlob";
 import { PermissionRow } from "@/components/onboarding/PermissionRow";
 import { getOrCreateDeviceId } from "@/lib/device";
 
+const ONBOARDING_KEY = "onboarding_complete";
+
 const { width: SW } = Dimensions.get("window");
 
 const TOTAL = 4;
@@ -38,12 +41,23 @@ export default function OnboardingScreen() {
   const router = useRouter();
   const scrollRef = useRef<any>(null);
   const [step, setStep] = useState(0);
+  const [ready, setReady] = useState(false);
   const animatedIndex = useSharedValue(0);
   const steppedAhead = useSharedValue(0);
 
   const [camPerm, requestCam] = useCameraPermissions();
   const [locGranted, setLocGranted] = useState(false);
   const camGranted = camPerm?.granted ?? false;
+
+  useEffect(() => {
+    SecureStore.getItemAsync(ONBOARDING_KEY).then((v) => {
+      if (v === "true") {
+        router.replace("/(tabs)");
+        return;
+      }
+      setReady(true);
+    });
+  }, []);
 
   const scrollTo = (i: number) => {
     scrollRef.current?.scrollTo({ x: i * SW, y: 0, animated: true });
@@ -58,6 +72,7 @@ export default function OnboardingScreen() {
       scrollTo(next);
       setStep(next);
     } else {
+      await SecureStore.setItemAsync(ONBOARDING_KEY, "true");
       router.replace("/(tabs)");
     }
   };
@@ -105,6 +120,8 @@ export default function OnboardingScreen() {
       ? "Get Started"
       : "Continue";
   const isMainDisabled = isLast && !bothGranted;
+
+  if (!ready) return null;
 
   return (
     <Primary>
