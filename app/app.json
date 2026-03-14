@@ -29,6 +29,20 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      [
+        "@reactvision/react-viro",
+        {
+          "android": {
+            "xRMode": ["AR"]
+          },
+          "ios": {
+            "NSCameraUsageDescription": "Camera is used for augmented reality features.",
+            "NSMicrophoneUsageDescription": "Microphone access is required for AR interactions.",
+            "NSPhotoLibraryUsageDescription": "Photo library access is needed to save AR content.",
+            "NSPhotoLibraryAddUsageDescription": "Permission to save photos from the app."
+          }
+        }
+      ],
       "expo-router",
       [
         "expo-splash-screen",
