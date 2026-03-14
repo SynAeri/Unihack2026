@@ -2,10 +2,10 @@ import requests
 
 endpoint_url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
 
-locationcoord = "placeholder"
-radius = 500 # Placeholder
-keyword = "Placeholder"
-API_Key = "Placeholder"
+locationcoord = "-33.8670522,151.1957362"
+radius = 1500 # Placeholder
+keyword = "restaurant"
+API_Key = "AIzaSyBkCPN6Fa7qDphn2oteJrY-wXC66_4arpM" #placeholder
 
 params = {
     "location": locationcoord,
@@ -15,7 +15,8 @@ params = {
 }
 
 response = requests.get(endpoint_url, params=params)
-#print(response)
-print()
-for location in response["results"]:
-    print(f"name: {location["name"]}, location :{location["geometry"]["location"]}")
+data = response.json()
+print(data)
+
+#for location in data["results"]:
+    #print(f"name: {location["name"]}, location :{location["geometry"]["location"]}")
