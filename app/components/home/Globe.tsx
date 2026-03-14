@@ -21,6 +21,23 @@ import { GrainyBackground } from "@/components/ui/GrainyBackground";
 
 const SLIME_GLB = require("../../assets/images/Meshy_AI_Green_Jelly_Slime_0314055224_texture.glb");
 
+function loadArrayBuffer(uri: string): Promise<ArrayBuffer> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", uri, true);
+    xhr.responseType = "arraybuffer";
+    xhr.onload = () => {
+      if (xhr.status === 200 || xhr.status === 0) {
+        resolve(xhr.response as ArrayBuffer);
+      } else {
+        reject(new Error(`GLB fetch failed: HTTP ${xhr.status}`));
+      }
+    };
+    xhr.onerror = () => reject(new Error("GLB XHR network error"));
+    xhr.send();
+  });
+}
+
 export function Globe({ style }: { style?: ViewStyle }) {
   const rafRef = useRef<number | null>(null);
 
@@ -69,20 +86,28 @@ export function Globe({ style }: { style?: ViewStyle }) {
         const asset = Asset.fromModule(SLIME_GLB);
         await asset.downloadAsync();
         const uri = asset.localUri ?? asset.uri;
-        if (!uri) return;
-        const resp = await fetch(uri);
-        const buffer = await resp.arrayBuffer();
+        if (!uri) {
+          console.warn("Slime GLB: no URI after download");
+          return;
+        }
+        console.log("Slime GLB URI:", uri);
+        const buffer = await loadArrayBuffer(uri);
+        console.log("Slime GLB buffer size:", buffer.byteLength);
         const loader = new GLTFLoader();
         const { scene: glbScene } = await new Promise<any>((resolve, reject) => {
           loader.parse(buffer, "", resolve, reject);
         });
         slimeGroup.remove(placeholder);
+        placeholder.geometry.dispose();
+        (placeholder.material as MeshBasicMaterial).dispose();
+
         const box = new Box3().setFromObject(glbScene);
         const size = new Vector3();
         box.getSize(size);
         const maxDim = Math.max(size.x, size.y, size.z) || 1;
         glbScene.scale.setScalar(1.2 / maxDim);
         slimeGroup.add(glbScene);
+        console.log("Slime GLB loaded successfully");
       } catch (e) {
         console.warn("Slime GLB load failed:", e);
       }
