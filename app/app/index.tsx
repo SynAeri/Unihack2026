@@ -5,6 +5,7 @@ import { useCameraPermissions } from "expo-camera";
 import * as Location from "expo-location";
 import * as SecureStore from "expo-secure-store";
 import { Ionicons } from "@expo/vector-icons";
+import 'react-native-reanimated';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
