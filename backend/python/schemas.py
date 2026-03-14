@@ -34,6 +34,7 @@ class SlimeResponse(BaseModel):
     bond_level: int
     state: str
     dominant_color: str
+    size: int
     created_at: str
 
 class InterpretImageResponse(BaseModel):
@@ -108,3 +109,18 @@ class DebugSeedSlimeRequest(BaseModel):
 class DebugSetStateRequest(BaseModel):
     slime_id: str
     state: str
+
+# Storage / asset schemas (aligned with task2.md)
+class SlimeAssetResponse(BaseModel):
+    id: str
+    user_id: str
+    slime_id: str
+    asset_type: str
+    asset_role: Optional[str] = None
+    bucket_name: str
+    storage_path: str
+    file_name: Optional[str] = None
+    mime_type: Optional[str] = None
+    is_active: bool
+    created_at: str
+

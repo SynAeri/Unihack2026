@@ -7,6 +7,7 @@ from python.routes.slime import router as slime_router
 from python.routes.events import router as events_router
 from python.routes.interaction import router as interaction_router
 from python.routes.debug import router as debug_router
+from python.routes.testmanualendpoint import router as test_router
 
 app = FastAPI(title="Slime Companion API")
 
@@ -24,4 +25,5 @@ app.include_router(slime_router)
 app.include_router(events_router)
 app.include_router(interaction_router)
 app.include_router(debug_router)
+app.include_router(test_router)
 
