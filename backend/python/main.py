@@ -8,6 +8,7 @@ from python.routes.events import router as events_router
 from python.routes.interaction import router as interaction_router
 from python.routes.debug import router as debug_router
 from python.routes.testmanualendpoint import router as test_router
+from python.routes.vision import router as vision_router
 
 app = FastAPI(title="Slime Companion API")
 
@@ -21,6 +22,7 @@ app.add_middleware(
 
 app.include_router(health_router)
 app.include_router(auth_router)
+app.include_router(vision_router)
 app.include_router(slime_router)
 app.include_router(events_router)
 app.include_router(interaction_router)

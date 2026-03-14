@@ -26,6 +26,15 @@ class InterpretImageRequest(BaseModel):
     dominant_color: str
     labels: List[str]
 
+# Vision API schemas for detecting objects via Gemini
+class VisionInterpretRequest(BaseModel):
+    user_id: Optional[str] = None
+    image_base64: str
+    mime_type: str = "image/jpeg"
+
+class VisionInterpretResult(BaseModel):
+    result: str
+
 class SlimeResponse(BaseModel):
     id: str
     user_id: str
