@@ -58,7 +58,15 @@
       ],
       "expo-secure-store",
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "react-native-vision-camera",
+        {
+          "cameraPermissionText": "Compass needs access to your camera to detect objects.",
+          "enableMicrophonePermission": false,
+          "enableLocationPermission": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
