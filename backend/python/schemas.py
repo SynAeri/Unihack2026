@@ -34,6 +34,7 @@ class SlimeResponse(BaseModel):
     bond_level: int
     state: str
     dominant_color: str
+    size: int
     created_at: str
 
 class InterpretImageResponse(BaseModel):

@@ -39,6 +39,7 @@ async def get_user_slime(user_id: str):
         bond_level=slime["bond_level"],
         state=slime["state"],
         dominant_color=slime["dominant_color"],
+        size=slime["size"],
         created_at=slime["created_at"]
     )
 
@@ -86,6 +87,7 @@ async def interpret_image(request: InterpretImageRequest):
             bond_level=slime["bond_level"],
             state=slime["state"],
             dominant_color=slime["dominant_color"],
+            size=slime["size"],
             created_at=slime["created_at"]
         ),
         personality=PersonalityData(
