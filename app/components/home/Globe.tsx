@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { View, StyleSheet, ViewStyle, Image as RNImage, Platform, NativeModules } from "react-native";
+import React, { useEffect, useState, useRef } from "react";
+import { View, StyleSheet, ViewStyle, Image as RNImage, Platform, PanResponder } from "react-native";
 import { Canvas } from "@react-three/fiber/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Asset } from "expo-asset";
@@ -140,7 +140,9 @@ function loadArrayBuffer(uri: string): Promise<ArrayBuffer> {
   });
 }
 
-function SlimeModel() {
+const ROTATION_SENSITIVITY = 0.005;
+
+function SlimeModel({ rotationX, rotationY }: { rotationX: number; rotationY: number }) {
   const [model, setModel] = useState<Object3D | null>(null);
 
   useEffect(() => {
@@ -177,10 +179,36 @@ function SlimeModel() {
   }, []);
 
   if (!model) return null;
-  return <primitive object={model} />;
+  return (
+    <group rotation={[rotationX, rotationY, 0]}>
+      <primitive object={model} />
+    </group>
+  );
 }
 
 export function Globe({ style }: { style?: ViewStyle }) {
+  const [rotation, setRotation] = useState({ x: 0, y: 0 });
+  const lastPos = useRef({ x: 0, y: 0 });
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: (_, g) => {
+        lastPos.current = { x: g.moveX, y: g.moveY };
+      },
+      onPanResponderMove: (_, g) => {
+        const dx = g.moveX - lastPos.current.x;
+        const dy = g.moveY - lastPos.current.y;
+        lastPos.current = { x: g.moveX, y: g.moveY };
+        setRotation((r) => ({
+          x: r.x + dy * ROTATION_SENSITIVITY,
+          y: r.y + dx * ROTATION_SENSITIVITY,
+        }));
+      },
+    })
+  ).current;
+
   return (
     <View style={[styles.container, style]}>
       <GrainyBackground
@@ -188,15 +216,17 @@ export function Globe({ style }: { style?: ViewStyle }) {
         intensity={0.2}
         style={StyleSheet.absoluteFill}
       />
-      <Canvas
-        camera={{ position: [0, 0, 4], fov: 50 }}
-        gl={{ alpha: true }}
-        style={styles.canvas}
-      >
-        <ambientLight intensity={1.0} />
-        <directionalLight position={[2, 3, 4]} intensity={1.5} />
-        <SlimeModel />
-      </Canvas>
+      <View style={styles.canvas} {...panResponder.panHandlers}>
+        <Canvas
+          camera={{ position: [0, 0, 4], fov: 50 }}
+          gl={{ alpha: true }}
+          style={styles.canvasFill}
+        >
+          <ambientLight intensity={1.0} />
+          <directionalLight position={[2, 3, 4]} intensity={1.5} />
+          <SlimeModel rotationX={rotation.x} rotationY={rotation.y} />
+        </Canvas>
+      </View>
       <LinearGradient
         colors={["transparent", "rgba(7,11,20,0.4)", "#070B14"]}
         style={styles.shadowGradient}
@@ -212,6 +242,9 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   canvas: {
+    flex: 1,
+  },
+  canvasFill: {
     flex: 1,
   },
   shadowGradient: {
