@@ -13,6 +13,8 @@ import {
   Box3,
   Vector3,
   WebGLRenderer,
+  AmbientLight,
+  DirectionalLight,
 } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { GrainyBackground } from "@/components/ui/GrainyBackground";
@@ -48,6 +50,11 @@ export function Globe({ style }: { style?: ViewStyle }) {
     camera.position.set(0, 0, 4);
     camera.lookAt(0, 0, 0);
 
+    scene.add(new AmbientLight(0xffffff, 1.0));
+    const dirLight = new DirectionalLight(0xffffff, 1.5);
+    dirLight.position.set(2, 3, 4);
+    scene.add(dirLight);
+
     const slimeGroup = new Group();
     scene.add(slimeGroup);
 
@@ -63,11 +70,11 @@ export function Globe({ style }: { style?: ViewStyle }) {
         await asset.downloadAsync();
         const uri = asset.localUri ?? asset.uri;
         if (!uri) return;
-        const dir = uri.substring(0, uri.lastIndexOf("/") + 1);
+        const resp = await fetch(uri);
+        const buffer = await resp.arrayBuffer();
         const loader = new GLTFLoader();
-        loader.setResourcePath(dir);
         const { scene: glbScene } = await new Promise<any>((resolve, reject) => {
-          loader.load(uri, resolve, undefined, reject);
+          loader.parse(buffer, "", resolve, reject);
         });
         slimeGroup.remove(placeholder);
         const box = new Box3().setFromObject(glbScene);
