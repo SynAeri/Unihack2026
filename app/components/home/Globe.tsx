@@ -126,7 +126,12 @@ if (Platform.OS !== "web") {
 
 const SLIME_GLB = require("../../assets/templates/slime/slime.glb");
 
-function loadArrayBuffer(uri: string): Promise<ArrayBuffer> {
+async function loadArrayBuffer(uri: string): Promise<ArrayBuffer> {
+  if (uri.startsWith("file://")) {
+    const b64 = await fs.readAsStringAsync(uri, { encoding: fs.EncodingType.Base64 });
+    return Buffer.from(b64, "base64").buffer;
+  }
+
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("GET", uri, true);
