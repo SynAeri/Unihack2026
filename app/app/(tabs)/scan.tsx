@@ -3,7 +3,10 @@ import SlimeARScene from '@/components/ar/SlimeARScene';
 import { useIsFocused } from "@react-navigation/native";
 import { AppState } from "react-native";
 import { detectObject } from "@/lib/gemini";
+import { getCurrentUser } from "@/lib/user";
+import { getUserSlime } from "@/lib/slime";
 import * as Haptics from "expo-haptics";
+import * as Location from "expo-location";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -26,7 +29,8 @@ import {
 
 export default function ScanTab() {
   // Use a mode state instead of a boolean to handle the hardware handoff
-  const [viewMode, setViewMode] = useState<'vision' | 'transitioning' | 'ar'>('vision');
+  const [viewMode, setViewMode] = useState<'vision' | 'transitioning' | 'ar' | 'checking'>('checking');
+  const [hasSlime, setHasSlime] = useState(false);
 
   const { hasPermission, requestPermission } = useCameraPermission();
   const device = useCameraDevice("back");
@@ -43,6 +47,29 @@ export default function ScanTab() {
   }, []);
 
   const isCameraActive = isFocused && isForeground && viewMode === 'vision';
+
+  // Check if user already has a slime on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const user = await getCurrentUser();
+        if (user) {
+          const slime = await getUserSlime(user.id);
+          if (slime) {
+            console.log("User has slime, skipping to AR mode");
+            setHasSlime(true);
+            setViewMode('ar');
+            return;
+          }
+        }
+        // No slime, show camera for scanning
+        setViewMode('vision');
+      } catch (e) {
+        console.warn("Error checking for slime:", e);
+        setViewMode('vision');
+      }
+    })();
+  }, []);
 
   const [detectedObject, setDetectedObject] = useState<string | null>(null);
   const [isDetecting, setIsDetecting] = useState(false);
@@ -80,20 +107,41 @@ export default function ScanTab() {
         enableShutterSound: false,
       });
 
-      const result = await detectObject(`file://${photo.path}`);
+      // Get current location
+      let latitude: number | undefined;
+      let longitude: number | undefined;
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const location = await Location.getCurrentPositionAsync({});
+          latitude = location.coords.latitude;
+          longitude = location.coords.longitude;
+          console.log("Scan location:", latitude, longitude);
+        }
+      } catch (locError) {
+        console.warn("Failed to get location:", locError);
+      }
 
-      if (result && result !== "Unknown") {
-        setDetectedObject(result);
-        
+      const result = await detectObject(`file://${photo.path}`, latitude, longitude);
+
+      if (result && result.result !== "Unknown") {
+        setDetectedObject(result.result);
+
+        // Log if a slime was created
+        if (result.slime) {
+          console.log("Slime created:", result.slime.slime_type);
+          setHasSlime(true);
+        }
+
         // --- THE FIX IS HERE ---
         // Wait for the user to read the label, then transition smoothly
         setTimeout(() => {
           setViewMode('transitioning'); // 1. Turn off Vision Camera
           setTimeout(() => {
             setViewMode('ar'); // 2. Turn on Viro AR after 500ms hardware release
-          }, 500); 
+          }, 500);
         }, 2500); // Start transition 2.5 seconds after detection
-        
+
       } else {
         setDetectedObject("Unknown");
       }
@@ -136,25 +184,12 @@ export default function ScanTab() {
 
   if (!device) return <View style={styles.container} />;
 
-  // 1. If we are in AR mode, render ONLY Viro with strict flex: 1 styling
-  if (viewMode === 'ar') {
+  // Show loading while checking for slime
+  if (viewMode === 'checking') {
     return (
-      <View style={styles.arContainer}> 
-        <ViroARSceneNavigator
-          autofocus={true}
-          initialScene={{ scene: SlimeARScene }}
-          style={StyleSheet.absoluteFillObject}
-        />
-        <Pressable 
-          style={styles.closeArButton} 
-          onPress={() => {
-            setViewMode('transitioning'); // Turn off AR
-            setTimeout(() => setViewMode('vision'), 500); // Back to Vision Camera
-            setDetectedObject(null);
-          }}
-        >
-          <Text style={styles.permissionButtonText}>Close AR</Text>
-        </Pressable>
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#7DFFA0" />
+        <Text style={styles.permissionText}>Checking for slime...</Text>
       </View>
     );
   }
@@ -162,10 +197,36 @@ export default function ScanTab() {
   // 2. If we are transitioning, show a sleek black screen so the camera hardware can reset
   if (viewMode === 'transitioning') {
     return (
-      <View style={styles.container}>
-         <ActivityIndicator size="large" color="#7DFFA0" />
+      <View style={styles.container} pointerEvents="none">
+        <ActivityIndicator size="large" color="#7DFFA0" />
       </View>
     );
+  }
+
+  // 1. If we are in AR mode, render ONLY Viro with strict flex: 1 styling
+  if (viewMode === 'ar') {
+return (
+    <View style={styles.arContainer}> 
+      <ViroARSceneNavigator
+        autofocus={true}
+        initialScene={{ scene: SlimeARScene }}
+        style={StyleSheet.absoluteFillObject}
+        pbrEnabled={true}
+        hdrEnabled={true}
+        shadowsEnabled={true}
+      />
+      <Pressable 
+        style={styles.closeArButton} 
+        onPress={() => {
+          setViewMode('transitioning');
+          setTimeout(() => setViewMode('vision'), 500);
+          setDetectedObject(null);
+        }}
+      >
+        <Text style={styles.permissionButtonText}>Close AR</Text>
+      </Pressable>
+    </View>
+  );
   }
 
   // 3. Otherwise, render the normal Vision Camera scanner

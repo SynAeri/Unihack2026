@@ -1,19 +1,50 @@
 // Vision API client for the Slime Companion app
-// Sends photos to backend for Gemini-powered object detection
+// Sends photos to backend for Gemini-powered object detection and slime creation
 
 import { EncodingType, readAsStringAsync } from "expo-file-system/legacy";
 import { API_BASE_URL } from "./config";
+import { getCurrentUser } from "./user";
+
+export interface DetectionResult {
+  result: string;
+  slime?: {
+    id: string;
+    user_id: string;
+    slime_type: string;
+    personality: any;
+    bond_level: number;
+    state: string;
+    dominant_color: string;
+    size: number;
+    created_at: string;
+  };
+  personality?: {
+    temperament: string;
+    interest: string;
+    preferred_places: string[];
+  };
+}
 
 /**
  * Sends a photo to the backend, which then calls Gemini safely.
+ * Also creates a slime for the user if they don't have one yet.
  * @param photoPath - local file path
- * @returns "Food" | "Book" | "Unknown" | null
+ * @param latitude - optional latitude where scan occurred
+ * @param longitude - optional longitude where scan occurred
+ * @returns DetectionResult with object class and optional slime data
  */
-export async function detectObject(photoPath: string): Promise<string | null> {
+export async function detectObject(
+  photoPath: string,
+  latitude?: number,
+  longitude?: number
+): Promise<DetectionResult | null> {
   try {
     const base64 = await readAsStringAsync(photoPath, {
       encoding: EncodingType.Base64,
     });
+
+    // Get current user to pass user_id
+    const user = await getCurrentUser();
 
     const response = await fetch(`${API_BASE_URL}/interpret-image`, {
       method: "POST",
@@ -21,8 +52,11 @@ export async function detectObject(photoPath: string): Promise<string | null> {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
+        user_id: user?.id || null,
         image_base64: base64,
         mime_type: "image/jpeg",
+        latitude: latitude || null,
+        longitude: longitude || null,
       }),
     });
 
@@ -33,7 +67,7 @@ export async function detectObject(photoPath: string): Promise<string | null> {
       return null;
     }
 
-    return data.result || null;
+    return data;
   } catch (error) {
     console.warn("Backend vision error:", error);
     return null;
