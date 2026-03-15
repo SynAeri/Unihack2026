@@ -88,7 +88,7 @@ const getRandomInterval = () => {
 
 // LOADING SCREEN TO WAIT FOR EVERYTHING TO LOAD OR SPAWN WONT WORK
 // The loading state ensures journey data is fetched before allowing AR placement
-export default function SlimeARScene() {
+export default function SlimeARScene(props: any) {
   const selectorRef = useRef<any>(null);
   const [isSpawned, setIsSpawned] = useState(false);
   const [canSpawn, setCanSpawn] = useState(false);
@@ -103,6 +103,13 @@ export default function SlimeARScene() {
   const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
   const wanderTimerRef = useRef<NodeJS.Timeout | null>(null);
   const spawnPointRef = useRef<[number, number, number]>([0, 0.05, 0]);
+
+  // Notify parent component of loading state
+  useEffect(() => {
+    if (props.sceneNavigator && props.sceneNavigator.viroAppProps) {
+      props.sceneNavigator.viroAppProps.onLoadingChange?.(isLoading);
+    }
+  }, [isLoading, props.sceneNavigator]);
 
   // Check if user is near slime's location
   useEffect(() => {
@@ -337,19 +344,8 @@ export default function SlimeARScene() {
       <ViroAmbientLight color="#ffffff" intensity={1500} />
       <ViroDirectionalLight color="#ffffff" direction={[0, -1, -0.5]} intensity={2000} />
 
-      {/* Loading screen while preparing data */}
-      {isLoading && (
-        <ViroText
-          text="Preparing your slime..."
-          scale={[0.2, 0.2, 0.2]}
-          position={[0, 0, -2]}
-          style={{ fontFamily: "Arial", fontSize: 30, color: "#7DFFA0" }}
-          transformBehaviors={["billboard"]}
-        />
-      )}
-
       {/* Location status message */}
-      {!isSpawned && !isLoading && locationMessage && (
+      {!isSpawned && locationMessage && (
         <ViroText
           text={locationMessage}
           scale={[0.15, 0.15, 0.15]}

@@ -127,7 +127,7 @@ if (Platform.OS !== "web") {
 
 // ---------------------------------------------------------------------------
 
-const DEFAULT_SLIME_GLB = require("../../assets/templates/slime/slime_white.glb");
+const DEFAULT_SLIME_GLB = require("../../assets/templates/slime/slime_p.glb");
 
 async function loadArrayBuffer(uri: string): Promise<ArrayBuffer> {
   if (uri.startsWith("file://")) {

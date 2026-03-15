@@ -31,12 +31,14 @@ export interface DetectionResult {
  * @param photoPath - local file path
  * @param latitude - optional latitude where scan occurred
  * @param longitude - optional longitude where scan occurred
+ * @param slimeName - optional name for the slime
  * @returns DetectionResult with object class and optional slime data
  */
 export async function detectObject(
   photoPath: string,
   latitude?: number,
-  longitude?: number
+  longitude?: number,
+  slimeName?: string
 ): Promise<DetectionResult | null> {
   try {
     const base64 = await readAsStringAsync(photoPath, {
@@ -57,6 +59,7 @@ export async function detectObject(
         mime_type: "image/jpeg",
         latitude: latitude || null,
         longitude: longitude || null,
+        slime_name: slimeName || null,
       }),
     });
 

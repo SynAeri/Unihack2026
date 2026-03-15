@@ -46,8 +46,9 @@ def interpret_image(payload: VisionInterpretRequest):
         if text not in {"Food", "Book", "Fit", "Unknown"}:
             text = "Unknown"
 
-        # If user_id is provided and object is recognized, create a slime
-        if payload.user_id and text != "Unknown":
+        # If user_id is provided, object is recognized, and slime_name is not empty string (detection-only), create a slime
+        # Note: slime_name == "" means detection-only mode (don't create slime yet)
+        if payload.user_id and text != "Unknown" and payload.slime_name != "":
             # Map detected object to object_class for slime creation
             object_class_map = {
                 "Food": "food",
@@ -73,11 +74,15 @@ def interpret_image(payload: VisionInterpretRequest):
                 # Create slime in database with default white color
                 slime_data = {
                     "user_id": payload.user_id,
+                    "name": payload.slime_name if payload.slime_name else None,
                     "slime_type": slime_type,
                     "personality": personality,
                     "bond_level": 0,
                     "state": "idle",
-                    "dominant_color": "#FFFFFF"  # Default white color
+                    "dominant_color": "#FFFFFF",  # Default white color
+                    "health": 100,
+                    "happiness": 100,
+                    "bond_gauge": 1
                 }
 
                 result = supabase.table("slimes").insert(slime_data).execute()
@@ -115,12 +120,16 @@ def interpret_image(payload: VisionInterpretRequest):
                     slime=SlimeResponse(
                         id=slime["id"],
                         user_id=slime["user_id"],
+                        name=slime.get("name"),
                         slime_type=slime["slime_type"],
                         personality=slime["personality"],
                         bond_level=slime["bond_level"],
                         state=slime["state"],
                         dominant_color=slime["dominant_color"],
                         size=slime["size"],
+                        health=slime.get("health", 100),
+                        happiness=slime.get("happiness", 100),
+                        bond_gauge=slime.get("bond_gauge", 1),
                         created_at=slime["created_at"]
                     ),
                     personality=PersonalityData(
@@ -138,12 +147,16 @@ def interpret_image(payload: VisionInterpretRequest):
                     slime=SlimeResponse(
                         id=slime["id"],
                         user_id=slime["user_id"],
+                        name=slime.get("name"),
                         slime_type=slime["slime_type"],
                         personality=slime["personality"],
                         bond_level=slime["bond_level"],
                         state=slime["state"],
                         dominant_color=slime["dominant_color"],
                         size=slime["size"],
+                        health=slime.get("health", 100),
+                        happiness=slime.get("happiness", 100),
+                        bond_gauge=slime.get("bond_gauge", 1),
                         created_at=slime["created_at"]
                     ),
                     personality=PersonalityData(

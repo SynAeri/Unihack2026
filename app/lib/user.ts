@@ -126,11 +126,16 @@ export async function getCurrentUser(): Promise<User | null> {
  * Clear user data (for testing/debugging)
  * This simulates a fresh install - next time initializeUser() is called,
  * a new user will be created in Supabase
+ *
+ * Usage: Import and call this function from console or a debug button
+ * import { clearUserData } from '@/lib/user';
+ * await clearUserData();
  */
 export async function clearUserData(): Promise<void> {
   try {
     await SecureStore.deleteItemAsync(USER_KEY);
-    console.log("User data cleared");
+    console.log("✅ User data cleared from SecureStore");
+    console.log("Restart the app to create a new user");
   } catch (error) {
     console.warn("Error clearing user data:", error);
   }
