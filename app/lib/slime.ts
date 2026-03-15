@@ -6,6 +6,7 @@ import { API_ENDPOINTS } from "./config";
 export interface Slime {
   id: string;
   user_id: string;
+  name?: string;
   slime_type: string;
   personality: {
     temperament: string;
@@ -16,6 +17,9 @@ export interface Slime {
   state: string;
   dominant_color: string;
   size: number;
+  health?: number;
+  happiness?: number;
+  bond_gauge?: number;
   created_at: string;
 }
 
