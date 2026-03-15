@@ -22,7 +22,8 @@ import {
 // MapLibre setup
 MapLibreGL.setAccessToken(null);
 
-const MAPLIBRE_STYLE = 'https://demotiles.maplibre.org/style.json';
+// OpenFreeMap: full roads, labels, buildings — no API key needed
+const MAPLIBRE_STYLE = 'https://tiles.openfreemap.org/styles/positron';
 
 export default function MapTab() {
   const isFocused = useIsFocused();
@@ -157,7 +158,7 @@ export default function MapTab() {
     <View style={styles.root}>
       <MapLibreGL.MapView
         style={styles.map}
-        styleURL={MAPLIBRE_STYLE}
+        mapStyle={MAPLIBRE_STYLE}
         compassEnabled={true}
         pitchEnabled={true}
         rotateEnabled={true}

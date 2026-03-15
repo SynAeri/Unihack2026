@@ -14,8 +14,8 @@ import { useIsFocused } from '@react-navigation/native';
 // MapLibre setup
 MapLibreGL.setAccessToken(null);
 
-// Free OpenStreetMap style
-const MAPLIBRE_STYLE = 'https://demotiles.maplibre.org/style.json';
+// OpenFreeMap: full roads, labels, buildings — no API key needed
+const MAPLIBRE_STYLE = 'https://tiles.openfreemap.org/styles/positron';
 
 interface JourneyState {
   slimeId: string;
@@ -33,7 +33,7 @@ export default function MapTab() {
   const [error, setError] = useState<string | null>(null);
   const [journeyState, setJourneyState] = useState<JourneyState | null>(null);
   const [slimeName, setSlimeName] = useState<string>('Your Slime');
-  const cameraRef = useRef<MapLibreGL.Camera>(null);
+  const cameraRef = useRef<MapLibreGL.CameraRef>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   // Pulse animation for slime marker
@@ -157,7 +157,7 @@ export default function MapTab() {
     <View style={styles.root}>
       <MapLibreGL.MapView
         style={styles.map}
-        styleURL={MAPLIBRE_STYLE}
+        mapStyle={MAPLIBRE_STYLE}
         compassEnabled={true}
         pitchEnabled={true}
         rotateEnabled={true}
