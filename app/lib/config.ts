@@ -30,11 +30,15 @@ export const API_ENDPOINTS = {
 
   // Interactions
   feedSlime: (slimeId: string) => `${API_BASE_URL}/interaction/slimes/${slimeId}/feed`,
+  patSlime: (slimeId: string) => `${API_BASE_URL}/interaction/slimes/${slimeId}/pat`,
+  fusePersonality: (slimeId: string) => `${API_BASE_URL}/interaction/slimes/${slimeId}/fuse-personality`,
 
-  // Journeys (if implemented later)
+  // Journeys
   startJourney: `${API_BASE_URL}/journeys/start`,
   getJourney: (journeyId: string) => `${API_BASE_URL}/journeys/${journeyId}`,
   updateProgress: (journeyId: string) => `${API_BASE_URL}/journeys/${journeyId}/progress`,
+  getCurrentJourney: (slimeId: string) => `${API_BASE_URL}/journeys/slimes/${slimeId}/current`,
+  forceStartJourney: (slimeId: string) => `${API_BASE_URL}/journeys/slimes/${slimeId}/force-start`,
 
   // Debug
   seedSlime: `${API_BASE_URL}/debug/seed-slime`,

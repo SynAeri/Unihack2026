@@ -1,10 +1,12 @@
 import { ViroARSceneNavigator } from '@reactvision/react-viro';
 import SlimeARScene from '@/components/ar/SlimeARScene';
+import { SlimePatInteraction } from '@/components/ar/SlimePatInteraction';
 import { useIsFocused } from "@react-navigation/native";
 import { AppState } from "react-native";
 import { detectObject } from "@/lib/gemini";
 import { getCurrentUser } from "@/lib/user";
 import { getUserSlime } from "@/lib/slime";
+import { patSlime } from "@/lib/interaction";
 import * as Haptics from "expo-haptics";
 import * as Location from "expo-location";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -37,6 +39,10 @@ export default function ScanTab() {
   const [showArLoading, setShowArLoading] = useState(false);
   const [slimeName, setSlimeName] = useState("");
   const [pendingScanData, setPendingScanData] = useState<{path: string, lat?: number, lng?: number} | null>(null);
+  const [slimeId, setSlimeId] = useState<string | null>(null);
+  const [showPatInteraction, setShowPatInteraction] = useState(false);
+  const [isSlimeSpawned, setIsSlimeSpawned] = useState(false);
+  const [arSceneKey, setArSceneKey] = useState(0);
 
   const { hasPermission, requestPermission } = useCameraPermission();
   const device = useCameraDevice("back");
@@ -54,8 +60,10 @@ export default function ScanTab() {
 
   const isCameraActive = isFocused && isForeground && viewMode === 'vision';
 
-  // Check if user already has a slime on mount
+  // Check if user already has a slime on mount and when tab is focused
   useEffect(() => {
+    if (!isFocused) return;
+
     (async () => {
       try {
         const user = await getCurrentUser();
@@ -64,7 +72,10 @@ export default function ScanTab() {
           if (slime) {
             console.log("User has slime, skipping to AR mode");
             setHasSlime(true);
+            setSlimeId(slime.id);
             setViewMode('ar');
+            // Force AR scene to remount and re-check location
+            setArSceneKey(prev => prev + 1);
             return;
           }
         }
@@ -75,7 +86,7 @@ export default function ScanTab() {
         setViewMode('vision');
       }
     })();
-  }, []);
+  }, [isFocused]);
 
   const [detectedObject, setDetectedObject] = useState<string | null>(null);
   const [isDetecting, setIsDetecting] = useState(false);
@@ -98,6 +109,37 @@ export default function ScanTab() {
         setShowArLoading(false);
       }, 1500);
       return () => clearTimeout(timer);
+    }
+  }, [viewMode]);
+
+  // Enable pat interaction only AFTER slime is spawned
+  useEffect(() => {
+    console.log("isSlimeSpawned changed to:", isSlimeSpawned);
+    if (isSlimeSpawned) {
+      // Small delay to ensure slime is fully rendered
+      const timer = setTimeout(() => {
+        console.log("Enabling pat interaction");
+        setShowPatInteraction(true);
+      }, 500);
+      return () => clearTimeout(timer);
+    } else {
+      console.log("Disabling pat interaction");
+      setShowPatInteraction(false);
+    }
+  }, [isSlimeSpawned]);
+
+  // Reset spawn state when AR scene remounts
+  useEffect(() => {
+    if (viewMode === 'ar') {
+      setIsSlimeSpawned(false);
+    }
+  }, [arSceneKey]);
+
+  // Cleanup when leaving AR mode
+  useEffect(() => {
+    if (viewMode !== 'ar') {
+      setShowPatInteraction(false);
+      setIsSlimeSpawned(false);
     }
   }, [viewMode]);
 
@@ -204,6 +246,32 @@ export default function ScanTab() {
   const buttonStyle = useAnimatedStyle(() => ({ transform: [{ scale: buttonScale.value }] }));
   const labelStyle = useAnimatedStyle(() => ({ opacity: labelOpacity.value }));
 
+  // Handle pat interaction
+  const handlePatComplete = useCallback(async () => {
+    if (!slimeId) return;
+
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    console.log("Patting slime...");
+
+    try {
+      const response = await patSlime(slimeId);
+      if (response) {
+        console.log(`Bond increased! New level: ${response.new_bond_level}`);
+
+        if (response.journey_started && response.destination) {
+          console.log(`Journey started to: ${response.destination.name}`);
+          // Could show a notification here
+        }
+      }
+    } catch (error) {
+      console.warn("Error patting slime:", error);
+    }
+
+    // Hide pat interaction briefly
+    setShowPatInteraction(false);
+    setTimeout(() => setShowPatInteraction(true), 2000);
+  }, [slimeId]);
+
   if (!hasPermission) {
     return (
       <View style={styles.container}>
@@ -235,16 +303,20 @@ export default function ScanTab() {
       setViewMode('transitioning');
 
       try {
+        const finalName = slimeName.trim() || "Unnamed Slime";
+        console.log("Sending slime name to backend:", finalName);
+
         const result = await detectObject(
           `file://${pendingScanData.path}`,
           pendingScanData.lat,
           pendingScanData.lng,
-          slimeName || undefined
+          finalName
         );
 
         if (result && result.slime) {
-          console.log("Slime created with name:", slimeName);
+          console.log("Slime created. Backend returned:", result.slime);
           setHasSlime(true);
+          setSlimeId(result.slime.id);
         }
 
         setTimeout(() => setViewMode('ar'), 500);
@@ -303,13 +375,30 @@ export default function ScanTab() {
     return (
       <View style={styles.arContainer}>
         <ViroARSceneNavigator
+          key={arSceneKey}
           autofocus={true}
-          initialScene={{ scene: SlimeARScene }}
+          initialScene={{
+            scene: SlimeARScene,
+            passProps: {
+              onSlimeSpawned: () => {
+                console.log("onSlimeSpawned callback fired in scan.tsx!");
+                setIsSlimeSpawned(true);
+              },
+            },
+          }}
           style={StyleSheet.absoluteFillObject}
           pbrEnabled={true}
           hdrEnabled={true}
           shadowsEnabled={true}
         />
+
+        {/* Pat interaction overlay */}
+        {showPatInteraction && !showArLoading && (
+          <SlimePatInteraction
+            onPatComplete={handlePatComplete}
+            isSlimeSpawned={isSlimeSpawned}
+          />
+        )}
 
         {/* LOADING SCREEN TO WAIT FOR EVERYTHING TO LOAD OR SPAWN WONT WORK */}
         {showArLoading && (
@@ -328,6 +417,7 @@ export default function ScanTab() {
             setViewMode('transitioning');
             setTimeout(() => setViewMode('vision'), 500);
             setDetectedObject(null);
+            setShowPatInteraction(false);
           }}
         >
           <Text style={styles.permissionButtonText}>Close AR</Text>

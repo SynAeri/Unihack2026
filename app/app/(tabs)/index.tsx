@@ -8,6 +8,7 @@ import { Globe } from "@/components/home/Globe";
 import { AnimatedProgressBar } from "@/components/ui/organisms/progress";
 import { getCurrentUser } from "@/lib/user";
 import { getUserSlime } from "@/lib/slime";
+import { getSlimeCurrentLocation } from "@/lib/journey";
 import { useIsFocused } from "@react-navigation/native";
 
 export default function HomeTab() {
@@ -17,7 +18,8 @@ export default function HomeTab() {
     health: 85,
     happiness: 72,
     bondGauge: 1,
-    personality: "Curious & Playful"
+    personality: "Idk maybe find out",
+    status: "Lounging" // "Moving" or "Lounging"
   });
 
   // Fetch slime data when tab comes into focus
@@ -39,12 +41,24 @@ export default function HomeTab() {
             wanderer: "Curious & Playful"
           };
 
+          // Check journey status to determine if moving or lounging
+          let status = "Lounging";
+          try {
+            const journey = await getSlimeCurrentLocation(slime.id);
+            if (journey && journey.status === 'active') {
+              status = "Moving";
+            }
+          } catch (err) {
+            console.log("No journey found, slime is lounging");
+          }
+
           setSlimeData({
             name: slime.name || "Unnamed Slime",
             health: slime.health || 100,
             happiness: slime.happiness || 100,
             bondGauge: slime.bond_gauge || 1,
-            personality: personalityMap[slime.slime_type] || "Curious & Playful"
+            personality: personalityMap[slime.slime_type] || "Curious & Playful",
+            status: status
           });
         }
       } catch (error) {
@@ -64,6 +78,18 @@ export default function HomeTab() {
       <Animated.View entering={FadeInDown.delay(200).springify()} style={s.info}>
         <Text style={s.name}>{slimeData.name}</Text>
         <Text style={s.personality}>{slimeData.personality}</Text>
+
+        {/* Movement status badge */}
+        <View style={s.statusWrapper}>
+          <Ionicons
+            name={slimeData.status === "Moving" ? "walk" : "bed"}
+            size={14}
+            color={slimeData.status === "Moving" ? "#7DFFA0" : "#9CA3AF"}
+          />
+          <Text style={[s.statusText, { color: slimeData.status === "Moving" ? "#7DFFA0" : "#9CA3AF" }]}>
+            {slimeData.status}
+          </Text>
+        </View>
 
         {/* Bond level badge — above bars */}
         <Animated.View entering={FadeInDown.delay(180).springify()} style={s.bondWrapper}>
@@ -140,6 +166,17 @@ const s = StyleSheet.create({
     fontSize: 14,
     marginTop: 6,
     letterSpacing: 1,
+  },
+  statusWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 8,
+  },
+  statusText: {
+    fontSize: 13,
+    fontWeight: "600",
+    letterSpacing: 0.5,
   },
   bondWrapper: {
     marginTop: 18,

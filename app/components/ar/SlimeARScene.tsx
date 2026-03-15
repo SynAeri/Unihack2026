@@ -82,10 +82,10 @@ export default function SlimeARScene(props: any) {
 
   // Notify parent component of loading state
   useEffect(() => {
-    if (props.sceneNavigator && props.sceneNavigator.viroAppProps) {
-      props.sceneNavigator.viroAppProps.onLoadingChange?.(isLoading);
+    if (props.arSceneNavigator && props.arSceneNavigator.viroAppProps) {
+      props.arSceneNavigator.viroAppProps.onLoadingChange?.(isLoading);
     }
-  }, [isLoading, props.sceneNavigator]);
+  }, [isLoading, props.arSceneNavigator]);
 
   // Check if user is near slime's location
   useEffect(() => {
@@ -151,9 +151,11 @@ export default function SlimeARScene(props: any) {
         const nearSlime = isNearSlime(userLat, userLng, slimeLat, slimeLng, 5000);
 
         if (nearSlime) {
+          console.log("User is near slime - allowing spawn");
           setCanSpawn(true);
           setLocationMessage("Tap a surface to place your slime!");
         } else {
+          console.log("User is too far from slime");
           setCanSpawn(false);
           const distance = Math.round(
             calculateDistance(userLat, userLng, slimeLat, slimeLng)
@@ -334,13 +336,20 @@ export default function SlimeARScene(props: any) {
         ref={selectorRef}
         alignment="Horizontal"
         onPlaneSelected={(anchor, tapPosition) => {
+          console.log("onPlaneSelected triggered! canSpawn:", canSpawn);
           if (!canSpawn) {
-            console.log("Cannot spawn - user too far from slime");
+            console.log("Cannot spawn - user too far from slime or canSpawn is false");
             return;
           }
           console.log("PLANE TAPPED! Spawning at:", tapPosition || anchor.position);
           setIsSpawned(true);
           setLocationMessage(""); // Clear message once spawned
+
+          // Notify parent that slime is spawned
+          if (props.arSceneNavigator?.viroAppProps?.onSlimeSpawned) {
+            console.log("Calling onSlimeSpawned callback");
+            props.arSceneNavigator.viroAppProps.onSlimeSpawned();
+          }
         }}
       >
         {isSpawned && (

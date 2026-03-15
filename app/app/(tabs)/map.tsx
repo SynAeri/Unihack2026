@@ -11,6 +11,7 @@ import { getCurrentUser } from '@/lib/user';
 import { getUserSlime } from '@/lib/slime';
 import { getSlimeCurrentLocation } from '@/lib/journey';
 import { useIsFocused } from '@react-navigation/native';
+import { API_BASE_URL } from '@/lib/config';
 import {
   JourneyManager,
   createJourneyManager,
@@ -18,6 +19,7 @@ import {
   JourneyStatus,
   getSlimeMarkerColor,
 } from '@/lib/finalTouch';
+import { FoodRequestBubble } from '@/components/map/FoodRequestBubble';
 
 // MapLibre setup
 MapLibreGL.setAccessToken(null);
@@ -33,6 +35,7 @@ export default function MapTab() {
   const [slimeData, setSlimeData] = useState<any>(null);
   const [activeEvent, setActiveEvent] = useState<JourneyEvent | null>(null);
   const [showEventModal, setShowEventModal] = useState(false);
+  const [showFoodRequest, setShowFoodRequest] = useState(false);
 
   const cameraRef = useRef<MapLibreGL.Camera>(null);
   const managerRef = useRef<JourneyManager | null>(null);
@@ -62,11 +65,33 @@ export default function MapTab() {
 
         setSlimeData(slime);
 
-        const journey = await getSlimeCurrentLocation(slime.id);
+        let journey = await getSlimeCurrentLocation(slime.id);
+
+        // FAILSAFE: If no journey exists, force-start one automatically
         if (!journey) {
-          setError('No journey data found');
-          setIsLoading(false);
-          return;
+          console.log('No journey found - triggering failsafe journey start');
+
+          try {
+            const response = await fetch(`${API_BASE_URL}/journeys/slimes/${slime.id}/force-start`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+              journey = data.journey;
+              console.log('Failsafe journey started:', journey);
+            } else {
+              setError('Failed to start journey. Please pat your slime 5 times in AR view!');
+              setIsLoading(false);
+              return;
+            }
+          } catch (err) {
+            console.warn('Error starting failsafe journey:', err);
+            setError('Failed to start journey. Please pat your slime 5 times in AR view!');
+            setIsLoading(false);
+            return;
+          }
         }
 
         // Create journey manager
@@ -96,6 +121,11 @@ export default function MapTab() {
         // Start journey if status is moving
         if (journey.status !== 'idle') {
           manager.start();
+          setShowFoodRequest(false);
+        } else {
+          // Slime is idle/lounging - show food request
+          console.log('Slime is lounging - showing food request');
+          setShowFoodRequest(true);
         }
 
         setIsLoading(false);
@@ -354,6 +384,12 @@ export default function MapTab() {
           </View>
         </LinearGradient>
       </Animated.View>
+
+      {/* Food request bubble - shown when slime is idle/lounging */}
+      <FoodRequestBubble
+        slimeType={slimeData.slime_type}
+        visible={showFoodRequest && !journeyStatus?.isMoving}
+      />
 
       {/* Event modal */}
       <Modal
