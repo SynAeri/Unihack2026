@@ -15,33 +15,19 @@ import { getCurrentUser } from '@/lib/user';
 import { getUserSlime } from '@/lib/slime';
 import { getSlimeCurrentLocation, isNearSlime } from '@/lib/journey';
 
-// Register animations for thought bubbles with ease in/out and movement
+// Register animations for thought bubbles with enlarge animation on appearance
 ViroAnimations.registerAnimations({
-  bubblePop: {
-    properties: { scaleX: 0.4, scaleY: 0.4, scaleZ: 0.4 },
-    easing: "Bounce",
-    duration: 500,
-  },
-  thoughtFadeIn: {
-    properties: {
-      scaleX: 0,
-      scaleY: 0,
-      scaleZ: 0,
-      opacity: 0,
-    },
-    duration: 0,
-  },
-  thoughtEaseIn: {
+  thoughtEnlarge: {
     properties: {
       scaleX: 0.4,
       scaleY: 0.4,
       scaleZ: 0.4,
       opacity: 1,
     },
-    easing: "EaseOut",
-    duration: 400,
+    easing: "Bounce",
+    duration: 600,
   },
-  thoughtEaseOut: {
+  thoughtShrink: {
     properties: {
       scaleX: 0,
       scaleY: 0,
@@ -59,31 +45,22 @@ ViroAnimations.registerAnimations({
   },
 });
 
-// All available thought bubble images
-const THOUGHT_IMAGES = {
-  feelings: [
-    require('../../assets/speech/Thought/HappyConfused.png'),
-    require('../../assets/speech/Thought/Straightman.png'),
-  ],
-  desires: [
-    require('../../assets/speech/desire/Book.png'),
-    require('../../assets/speech/desire/Burger.png'),
-    require('../../assets/speech/desire/Fit.png'),
-  ],
-};
+// Thought bubble images - only from Thought directory
+// Other directories (desire) are reserved for movement/interaction events
+const THOUGHT_IMAGES = [
+  require('../../assets/speech/Thought/HappyConfused.png'),
+  require('../../assets/speech/Thought/Straightman.png'),
+];
 
-// Flatten all thought images into a single array for random selection
-const ALL_THOUGHTS = [...THOUGHT_IMAGES.feelings, ...THOUGHT_IMAGES.desires];
-
-// Helper to get random thought
+// Helper to get random thought from Thought directory
 const getRandomThought = () => {
-  const randomIndex = Math.floor(Math.random() * ALL_THOUGHTS.length);
-  return ALL_THOUGHTS[randomIndex];
+  const randomIndex = Math.floor(Math.random() * THOUGHT_IMAGES.length);
+  return THOUGHT_IMAGES[randomIndex];
 };
 
-// Helper to get random interval between 20-120 seconds
+// Helper to get random interval between 10-45 seconds
 const getRandomInterval = () => {
-  return Math.floor(Math.random() * (120000 - 20000 + 1)) + 20000; // 20-120 seconds in ms
+  return Math.floor(Math.random() * (45000 - 10000 + 1)) + 10000; // 10-45 seconds in ms
 };
 
 // LOADING SCREEN TO WAIT FOR EVERYTHING TO LOAD OR SPAWN WONT WORK
@@ -96,7 +73,6 @@ export default function SlimeARScene(props: any) {
   const [locationMessage, setLocationMessage] = useState<string>("");
   const [currentThought, setCurrentThought] = useState<any>(null);
   const [showThought, setShowThought] = useState(false);
-  const [thoughtAnimation, setThoughtAnimation] = useState<string>('thoughtFadeIn');
   const [slimePosition, setSlimePosition] = useState<[number, number, number]>([0, 0.05, 0]);
 
   const thoughtTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -218,8 +194,9 @@ export default function SlimeARScene(props: any) {
   useEffect(() => {
     if (!isSpawned) return;
 
-    const scheduleNextThought = () => {
-      const interval = getRandomInterval();
+    const scheduleNextThought = (isFirstThought: boolean = false) => {
+      // First thought appears after 3 seconds, subsequent thoughts use random interval
+      const interval = isFirstThought ? 3000 : getRandomInterval();
       console.log(`Next thought in ${interval / 1000} seconds`);
 
       thoughtTimerRef.current = setTimeout(() => {
@@ -227,28 +204,26 @@ export default function SlimeARScene(props: any) {
         const thought = getRandomThought();
         setCurrentThought(thought);
         setShowThought(true);
-        setThoughtAnimation('thoughtEaseIn');
 
         console.log('Showing thought bubble');
 
-        // Hide thought after 5 seconds with ease out animation
+        // Hide thought after 5 seconds with shrink animation
         hideTimerRef.current = setTimeout(() => {
-          setThoughtAnimation('thoughtEaseOut');
+          setShowThought(false);
 
-          // Wait for animation to finish before hiding
+          // Wait for shrink animation to finish before clearing
           setTimeout(() => {
-            setShowThought(false);
             setCurrentThought(null);
 
-            // Schedule next thought
-            scheduleNextThought();
-          }, 300); // Duration of thoughtEaseOut animation
+            // Schedule next thought (not the first anymore)
+            scheduleNextThought(false);
+          }, 300); // Duration of thoughtShrink animation
         }, 5000); // Show thought for 5 seconds
       }, interval);
     };
 
-    // Start the cycle
-    scheduleNextThought();
+    // Start the cycle with first thought appearing early
+    scheduleNextThought(true);
 
     // Cleanup on unmount
     return () => {
@@ -381,16 +356,20 @@ export default function SlimeARScene(props: any) {
               onError={(e) => console.log("GLB ERROR:", e)}
             />
 
-            {/* Thought bubble with randomized content and animations */}
-            {showThought && currentThought && (
+            {/* Thought bubble with enlarge animation on appearance */}
+            {currentThought && (
               <ViroNode
                 position={[0, 0.65, 0]}
                 transformBehaviors={["billboard"]}
               >
                 <ViroImage
                   source={currentThought}
-                  scale={[0.4, 0.4, 0.4]}
-                  animation={{ name: thoughtAnimation, run: true, loop: false }}
+                  scale={[0, 0, 0]}
+                  animation={{
+                    name: showThought ? 'thoughtEnlarge' : 'thoughtShrink',
+                    run: true,
+                    loop: false
+                  }}
                 />
               </ViroNode>
             )}
