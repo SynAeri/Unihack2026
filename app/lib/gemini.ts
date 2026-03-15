@@ -1,42 +1,78 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+// Vision API client for the Slime Companion app
+// Sends photos to backend for Gemini-powered object detection and slime creation
+
 import { EncodingType, readAsStringAsync } from "expo-file-system/legacy";
+import { API_BASE_URL } from "./config";
+import { getCurrentUser } from "./user";
 
-const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY || "";
-
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+export interface DetectionResult {
+  result: string;
+  slime?: {
+    id: string;
+    user_id: string;
+    slime_type: string;
+    personality: any;
+    bond_level: number;
+    state: string;
+    dominant_color: string;
+    size: number;
+    created_at: string;
+  };
+  personality?: {
+    temperament: string;
+    interest: string;
+    preferred_places: string[];
+  };
+}
 
 /**
- * Sends a photo to Google Gemini and returns the name of the detected object.
- * @param photoPath - The local file path of the photo
- * @returns The detected object name, or null if detection failed
+ * Sends a photo to the backend, which then calls Gemini safely.
+ * Also creates a slime for the user if they don't have one yet.
+ * @param photoPath - local file path
+ * @param latitude - optional latitude where scan occurred
+ * @param longitude - optional longitude where scan occurred
+ * @param slimeName - optional name for the slime
+ * @returns DetectionResult with object class and optional slime data
  */
-export async function detectObject(photoPath: string): Promise<string | null> {
+export async function detectObject(
+  photoPath: string,
+  latitude?: number,
+  longitude?: number,
+  slimeName?: string
+): Promise<DetectionResult | null> {
   try {
-    // Read the image file as base64 using the legacy API to avoid deprecation warnings
     const base64 = await readAsStringAsync(photoPath, {
       encoding: EncodingType.Base64,
     });
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    // Get current user to pass user_id
+    const user = await getCurrentUser();
 
-    const prompt = "Look at this image. Is the main object a FOOD item or a BOOK? If it is a food item, reply with only the word 'Food'. If it is a book, reply with only the word 'Book'. If it is neither a food nor a book, reply with exactly 'Unknown'. Reply with ONLY one of these three words: Food, Book, or Unknown. Do not provide any other text.";
-
-    const result = await model.generateContent([
-      prompt,
-      {
-        inlineData: {
-          data: base64,
-          mimeType: "image/jpeg",
-        },
+    const response = await fetch(`${API_BASE_URL}/interpret-image`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
-    ]);
+      body: JSON.stringify({
+        user_id: user?.id || null,
+        image_base64: base64,
+        mime_type: "image/jpeg",
+        latitude: latitude || null,
+        longitude: longitude || null,
+        slime_name: slimeName || null,
+      }),
+    });
 
-    const response = await result.response;
-    const text = response.text().trim();
-    
-    return text || null;
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.warn("Backend error:", data);
+      return null;
+    }
+
+    return data;
   } catch (error) {
-    console.warn("Gemini SDK error:", error);
+    console.warn("Backend vision error:", error);
     return null;
   }
 }

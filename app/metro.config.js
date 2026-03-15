@@ -17,7 +17,7 @@ const { withUniwindConfig } = require("uniwind/metro");
 const { wrapWithReanimatedMetroConfig } = require("react-native-reanimated/metro-config");
 
 const config = getDefaultConfig(__dirname);
-config.resolver.assetExts.push("fbx", "glb", "gltf");
+config.resolver.assetExts.push("fbx", "glb", "gltf", "obj", "mtl");
 
 module.exports = withUniwindConfig(
   wrapWithReanimatedMetroConfig(config),

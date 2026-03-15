@@ -34,12 +34,16 @@ async def get_user_slime(user_id: str):
     return SlimeResponse(
         id=slime["id"],
         user_id=slime["user_id"],
+        name=slime.get("name"),
         slime_type=slime["slime_type"],
         personality=slime["personality"],
         bond_level=slime["bond_level"],
         state=slime["state"],
         dominant_color=slime["dominant_color"],
         size=slime["size"],
+        health=slime.get("health", 100),
+        happiness=slime.get("happiness", 100),
+        bond_gauge=slime.get("bond_gauge", 1),
         created_at=slime["created_at"]
     )
 

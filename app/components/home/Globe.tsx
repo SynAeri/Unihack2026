@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { View, StyleSheet, ViewStyle, Image as RNImage, Platform, PanResponder } from "react-native";
 import { Canvas } from "@react-three/fiber/native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -8,6 +8,9 @@ import { Box3, Vector3, Object3D, TextureLoader, Texture, FileLoader, LoaderUtil
 import { fromByteArray } from "base64-js";
 import { Buffer } from "buffer";
 import { GrainyBackground } from "@/components/ui/GrainyBackground";
+import { getCurrentUser } from "@/lib/user";
+import { getUserSlime, getSlimeModelPath } from "@/lib/slime";
+import { useIsFocused } from "@react-navigation/native";
 
 // ---------------------------------------------------------------------------
 // Polyfills — apply to OUR copy of three (the same one GLTFLoader imports).
@@ -124,7 +127,7 @@ if (Platform.OS !== "web") {
 
 // ---------------------------------------------------------------------------
 
-const SLIME_GLB = require("../../assets/templates/slime/slime.glb");
+const DEFAULT_SLIME_GLB = require("../../assets/templates/slime/slime_p.glb");
 
 async function loadArrayBuffer(uri: string): Promise<ArrayBuffer> {
   if (uri.startsWith("file://")) {
@@ -147,14 +150,22 @@ async function loadArrayBuffer(uri: string): Promise<ArrayBuffer> {
 
 const ROTATION_SENSITIVITY = 0.005;
 
-function SlimeModel({ rotationX, rotationY }: { rotationX: number; rotationY: number }) {
+function SlimeModel({
+  rotationX,
+  rotationY,
+  slimeGLB
+}: {
+  rotationX: number;
+  rotationY: number;
+  slimeGLB: any;
+}) {
   const [model, setModel] = useState<Object3D | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const asset = Asset.fromModule(SLIME_GLB);
+        const asset = Asset.fromModule(slimeGLB);
         await asset.downloadAsync();
         const uri = asset.localUri ?? asset.uri;
         if (!uri || cancelled) return;
@@ -181,7 +192,7 @@ function SlimeModel({ rotationX, rotationY }: { rotationX: number; rotationY: nu
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [slimeGLB]);
 
   if (!model) return null;
   return (
@@ -193,7 +204,40 @@ function SlimeModel({ rotationX, rotationY }: { rotationX: number; rotationY: nu
 
 export function Globe({ style }: { style?: ViewStyle }) {
   const [rotation, setRotation] = useState({ x: 0, y: 0 });
+  const [slimeModel, setSlimeModel] = useState<any>(DEFAULT_SLIME_GLB);
   const lastPos = useRef({ x: 0, y: 0 });
+  const isFocused = useIsFocused();
+
+  // Function to fetch and update slime
+  const fetchSlime = useCallback(async () => {
+    try {
+      const user = await getCurrentUser();
+      if (!user) {
+        console.log("No user found, using default white slime");
+        return;
+      }
+
+      const slime = await getUserSlime(user.id);
+      if (slime) {
+        console.log("User has slime:", slime.slime_type);
+        const modelPath = getSlimeModelPath(slime.slime_type);
+        setSlimeModel(modelPath);
+      } else {
+        console.log("User has no slime yet, using default white slime");
+        setSlimeModel(DEFAULT_SLIME_GLB);
+      }
+    } catch (e) {
+      console.warn("Error fetching slime:", e);
+    }
+  }, []);
+
+  // Fetch slime on mount and whenever screen comes into focus
+  useEffect(() => {
+    if (isFocused) {
+      console.log("🔄 Globe focused, refreshing slime data...");
+      fetchSlime();
+    }
+  }, [isFocused, fetchSlime]);
 
   const panResponder = useRef(
     PanResponder.create({
@@ -229,7 +273,7 @@ export function Globe({ style }: { style?: ViewStyle }) {
         >
           <ambientLight intensity={1.0} />
           <directionalLight position={[2, 3, 4]} intensity={1.5} />
-          <SlimeModel rotationX={rotation.x} rotationY={rotation.y} />
+          <SlimeModel rotationX={rotation.x} rotationY={rotation.y} slimeGLB={slimeModel} />
         </Canvas>
       </View>
       <LinearGradient
