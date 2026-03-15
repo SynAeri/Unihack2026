@@ -30,6 +30,10 @@ export default function TabsLayout() {
         <Icon sf={{ default: "viewfinder", selected: "viewfinder" }} />
         <Label>Scan</Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="map">
+        <Icon sf={{ default: "map", selected: "map.fill" }} />
+        <Label>Map</Label>
+      </NativeTabs.Trigger>
     </NativeTabs>
   );
 }

@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
-import { View, StyleSheet, ViewStyle, Image as RNImage, Platform, PanResponder } from "react-native";
+import { View, StyleSheet, ViewStyle, Image as RNImage, Platform, PanResponder, Pressable, Text } from "react-native";
 import { Canvas } from "@react-three/fiber/native";
 import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 import { Asset } from "expo-asset";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { Box3, Vector3, Object3D, TextureLoader, Texture, FileLoader, LoaderUtils } from "three";
@@ -11,6 +12,7 @@ import { GrainyBackground } from "@/components/ui/GrainyBackground";
 import { getCurrentUser } from "@/lib/user";
 import { getUserSlime, getSlimeModelPath } from "@/lib/slime";
 import { useIsFocused } from "@react-navigation/native";
+import { useRouter } from "expo-router";
 
 // ---------------------------------------------------------------------------
 // Polyfills — apply to OUR copy of three (the same one GLTFLoader imports).
@@ -207,6 +209,7 @@ export function Globe({ style }: { style?: ViewStyle }) {
   const [slimeModel, setSlimeModel] = useState<any>(DEFAULT_SLIME_GLB);
   const lastPos = useRef({ x: 0, y: 0 });
   const isFocused = useIsFocused();
+  const router = useRouter();
 
   // Function to fetch and update slime
   const fetchSlime = useCallback(async () => {
@@ -281,6 +284,20 @@ export function Globe({ style }: { style?: ViewStyle }) {
         style={styles.shadowGradient}
         pointerEvents="none"
       />
+
+      {/* Spherical map button positioned behind/below the slime */}
+      <Pressable
+        style={styles.mapButton}
+        onPress={() => router.push('/map')}
+      >
+        <LinearGradient
+          colors={['rgba(125, 255, 160, 0.2)', 'rgba(125, 255, 160, 0.1)']}
+          style={styles.mapButtonGradient}
+        >
+          <Ionicons name="map" size={24} color="#7DFFA0" />
+          <Text style={styles.mapButtonText}>View Map</Text>
+        </LinearGradient>
+      </Pressable>
     </View>
   );
 }
@@ -302,5 +319,27 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     height: "55%",
+  },
+  mapButton: {
+    position: "absolute",
+    bottom: 40,
+    alignSelf: "center",
+    borderRadius: 24,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(125, 255, 160, 0.3)",
+  },
+  mapButtonGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  mapButtonText: {
+    color: "#7DFFA0",
+    fontSize: 16,
+    fontWeight: "600",
+    letterSpacing: 0.5,
   },
 });
