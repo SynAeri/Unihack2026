@@ -86,10 +86,13 @@ const getRandomInterval = () => {
   return Math.floor(Math.random() * (120000 - 20000 + 1)) + 20000; // 20-120 seconds in ms
 };
 
+// LOADING SCREEN TO WAIT FOR EVERYTHING TO LOAD OR SPAWN WONT WORK
+// The loading state ensures journey data is fetched before allowing AR placement
 export default function SlimeARScene() {
   const selectorRef = useRef<any>(null);
   const [isSpawned, setIsSpawned] = useState(false);
   const [canSpawn, setCanSpawn] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [locationMessage, setLocationMessage] = useState<string>("");
   const [currentThought, setCurrentThought] = useState<any>(null);
   const [showThought, setShowThought] = useState(false);
@@ -103,13 +106,14 @@ export default function SlimeARScene() {
 
   // Check if user is near slime's location
   useEffect(() => {
-    (async () => {
+    const checkLocation = async () => {
       try {
         // Get location permission
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') {
           setLocationMessage("Location permission needed to place slime");
           setCanSpawn(false);
+          setIsLoading(false);
           return;
         }
 
@@ -123,6 +127,7 @@ export default function SlimeARScene() {
         if (!user) {
           setLocationMessage("No user found");
           setCanSpawn(false);
+          setIsLoading(false);
           return;
         }
 
@@ -130,6 +135,7 @@ export default function SlimeARScene() {
         if (!slime) {
           setLocationMessage("No slime found");
           setCanSpawn(false);
+          setIsLoading(false);
           return;
         }
 
@@ -140,6 +146,7 @@ export default function SlimeARScene() {
           console.log("No journey found, allowing placement");
           setCanSpawn(true);
           setLocationMessage("Tap a surface to place your slime!");
+          setIsLoading(false);
           return;
         }
 
@@ -149,6 +156,7 @@ export default function SlimeARScene() {
           console.log("Slime at birth location, allowing placement anywhere");
           setCanSpawn(true);
           setLocationMessage("Tap a surface to place your slime!");
+          setIsLoading(false);
           return;
         }
 
@@ -169,12 +177,18 @@ export default function SlimeARScene() {
           );
           setLocationMessage(`Your slime is ${distance}m away at ${journey.place_name || 'a location'}. Get closer to interact!`);
         }
+        setIsLoading(false);
       } catch (error) {
         console.warn("Location check error:", error);
         setLocationMessage("Error checking location");
         setCanSpawn(false);
+        setIsLoading(false);
       }
-    })();
+    };
+
+    // Wait a bit for journey data to propagate after slime creation
+    const timer = setTimeout(checkLocation, 500);
+    return () => clearTimeout(timer);
   }, []);
 
   // Helper function for distance calculation (same as journey.ts)
@@ -323,8 +337,19 @@ export default function SlimeARScene() {
       <ViroAmbientLight color="#ffffff" intensity={1500} />
       <ViroDirectionalLight color="#ffffff" direction={[0, -1, -0.5]} intensity={2000} />
 
+      {/* Loading screen while preparing data */}
+      {isLoading && (
+        <ViroText
+          text="Preparing your slime..."
+          scale={[0.2, 0.2, 0.2]}
+          position={[0, 0, -2]}
+          style={{ fontFamily: "Arial", fontSize: 30, color: "#7DFFA0" }}
+          transformBehaviors={["billboard"]}
+        />
+      )}
+
       {/* Location status message */}
-      {!isSpawned && locationMessage && (
+      {!isSpawned && !isLoading && locationMessage && (
         <ViroText
           text={locationMessage}
           scale={[0.15, 0.15, 0.15]}
