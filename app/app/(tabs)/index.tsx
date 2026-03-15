@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import Animated, { FadeInUp, FadeInDown } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
@@ -6,13 +6,53 @@ import { Ionicons } from "@expo/vector-icons";
 import { SHELL_PX } from "@/components/ui/Primary";
 import { Globe } from "@/components/home/Globe";
 import { AnimatedProgressBar } from "@/components/ui/organisms/progress";
-
-const PET_NAME = "Blobby";
-const HEALTH = 0.85;
-const HAPPINESS = 0.72;
-const BOND_LEVEL = 1;
+import { getCurrentUser } from "@/lib/user";
+import { getUserSlime } from "@/lib/slime";
+import { useIsFocused } from "@react-navigation/native";
 
 export default function HomeTab() {
+  const isFocused = useIsFocused();
+  const [slimeData, setSlimeData] = useState({
+    name: "Who is that?",
+    health: 85,
+    happiness: 72,
+    bondGauge: 1,
+    personality: "Curious & Playful"
+  });
+
+  // Fetch slime data when tab comes into focus
+  useEffect(() => {
+    if (!isFocused) return;
+
+    (async () => {
+      try {
+        const user = await getCurrentUser();
+        if (!user) return;
+
+        const slime = await getUserSlime(user.id);
+        if (slime) {
+          // Map slime type to personality description
+          const personalityMap: Record<string, string> = {
+            scholar: "Quiet & Studious",
+            glutton: "Social & Snacky",
+            athlete: "Energetic & Active",
+            wanderer: "Curious & Playful"
+          };
+
+          setSlimeData({
+            name: slime.name || "Unnamed Slime",
+            health: slime.health || 100,
+            happiness: slime.happiness || 100,
+            bondGauge: slime.bond_gauge || 1,
+            personality: personalityMap[slime.slime_type] || "Curious & Playful"
+          });
+        }
+      } catch (error) {
+        console.warn("Error fetching slime data:", error);
+      }
+    })();
+  }, [isFocused]);
+
   return (
     <View style={s.root}>
       {/* Globe spans full width — slime is 3D in scene */}
@@ -22,8 +62,8 @@ export default function HomeTab() {
 
       {/* Name + Personality + Bars — padded content below */}
       <Animated.View entering={FadeInDown.delay(200).springify()} style={s.info}>
-        <Text style={s.name}>{PET_NAME}</Text>
-        <Text style={s.personality}>Curious & Playful</Text>
+        <Text style={s.name}>{slimeData.name}</Text>
+        <Text style={s.personality}>{slimeData.personality}</Text>
 
         {/* Bond level badge — above bars */}
         <Animated.View entering={FadeInDown.delay(180).springify()} style={s.bondWrapper}>
@@ -36,7 +76,7 @@ export default function HomeTab() {
             <View style={s.bondInner}>
               <Ionicons name="sparkles" size={14} color="#7DFFA0" style={{ opacity: 0.9 }} />
               <Text style={s.bondLabel}>BOND</Text>
-              <Text style={s.bondValue}>{BOND_LEVEL}</Text>
+              <Text style={s.bondValue}>{slimeData.bondGauge}</Text>
             </View>
           </LinearGradient>
         </Animated.View>
@@ -47,7 +87,7 @@ export default function HomeTab() {
             <Ionicons name="heart" size={16} color="#ff6b6b" />
             <Text style={s.barLabel}>Health</Text>
             <AnimatedProgressBar
-              progress={HEALTH}
+              progress={slimeData.health / 100}
               height={8}
               width="100%"
               progressColor="#ff6b6b"
@@ -60,7 +100,7 @@ export default function HomeTab() {
             <Ionicons name="happy" size={16} color="#7DFFA0" />
             <Text style={s.barLabel}>Happiness</Text>
             <AnimatedProgressBar
-              progress={HAPPINESS}
+              progress={slimeData.happiness / 100}
               height={8}
               width="100%"
               progressColor="#7DFFA0"

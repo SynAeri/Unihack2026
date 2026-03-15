@@ -13,7 +13,10 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  TextInput,
   View,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import Animated, {
   useAnimatedStyle,
@@ -29,8 +32,11 @@ import {
 
 export default function ScanTab() {
   // Use a mode state instead of a boolean to handle the hardware handoff
-  const [viewMode, setViewMode] = useState<'vision' | 'transitioning' | 'ar' | 'checking'>('checking');
+  const [viewMode, setViewMode] = useState<'vision' | 'transitioning' | 'ar' | 'checking' | 'naming'>('checking');
   const [hasSlime, setHasSlime] = useState(false);
+  const [showArLoading, setShowArLoading] = useState(false);
+  const [slimeName, setSlimeName] = useState("");
+  const [pendingScanData, setPendingScanData] = useState<{path: string, lat?: number, lng?: number} | null>(null);
 
   const { hasPermission, requestPermission } = useCameraPermission();
   const device = useCameraDevice("back");
@@ -83,6 +89,18 @@ export default function ScanTab() {
     }
   }, [hasPermission]);
 
+  // Show loading overlay when entering AR mode
+  useEffect(() => {
+    if (viewMode === 'ar') {
+      setShowArLoading(true);
+      // Hide loading screen after data has time to load (1.5 seconds)
+      const timer = setTimeout(() => {
+        setShowArLoading(false);
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [viewMode]);
+
   const onSnap = useCallback(async () => {
     if (isDetecting || !camera.current) return;
 
@@ -122,28 +140,43 @@ export default function ScanTab() {
         console.warn("Failed to get location:", locError);
       }
 
-      const result = await detectObject(`file://${photo.path}`, latitude, longitude);
+      // Check if user already has a slime first
+      const user = await getCurrentUser();
+      const existingSlime = user ? await getUserSlime(user.id) : null;
 
-      if (result && result.result !== "Unknown") {
-        setDetectedObject(result.result);
+      if (existingSlime) {
+        // User already has slime, detect and go to AR normally
+        const result = await detectObject(`file://${photo.path}`, latitude, longitude);
 
-        // Log if a slime was created
-        if (result.slime) {
-          console.log("Slime created:", result.slime.slime_type);
-          setHasSlime(true);
-        }
-
-        // --- THE FIX IS HERE ---
-        // Wait for the user to read the label, then transition smoothly
-        setTimeout(() => {
-          setViewMode('transitioning'); // 1. Turn off Vision Camera
+        if (result && result.result !== "Unknown") {
+          setDetectedObject(result.result);
           setTimeout(() => {
-            setViewMode('ar'); // 2. Turn on Viro AR after 500ms hardware release
-          }, 500);
-        }, 2500); // Start transition 2.5 seconds after detection
-
+            setViewMode('transitioning');
+            setTimeout(() => setViewMode('ar'), 500);
+          }, 2500);
+        } else {
+          setDetectedObject("Unknown");
+        }
       } else {
-        setDetectedObject("Unknown");
+        // User doesn't have slime yet - detect WITHOUT creating slime first
+        // We pass undefined for slime_name to prevent creation
+        const result = await detectObject(`file://${photo.path}`, latitude, longitude, "");
+
+        if (result && result.result !== "Unknown") {
+          // Valid object detected - show the object type
+          setDetectedObject(result.result);
+
+          // Save scan data for later slime creation
+          setPendingScanData({ path: photo.path, lat: latitude, lng: longitude });
+
+          // After showing the detection, go to naming screen
+          setTimeout(() => {
+            setViewMode('naming');
+          }, 2500);
+        } else {
+          // Unknown object - don't proceed
+          setDetectedObject("Unknown");
+        }
       }
 
       labelOpacity.value = withSequence(
@@ -194,6 +227,68 @@ export default function ScanTab() {
     );
   }
 
+  // Show naming screen for new slime
+  if (viewMode === 'naming') {
+    const handleNameSubmit = async () => {
+      if (!pendingScanData) return;
+
+      setViewMode('transitioning');
+
+      try {
+        const result = await detectObject(
+          `file://${pendingScanData.path}`,
+          pendingScanData.lat,
+          pendingScanData.lng,
+          slimeName || undefined
+        );
+
+        if (result && result.slime) {
+          console.log("Slime created with name:", slimeName);
+          setHasSlime(true);
+        }
+
+        setTimeout(() => setViewMode('ar'), 500);
+      } catch (error) {
+        console.warn("Error creating slime:", error);
+        setViewMode('vision');
+      }
+    };
+
+    return (
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
+      >
+        <View style={styles.namingContainer}>
+          <View style={styles.namingCard}>
+            <Text style={styles.namingTitle}>Name Your Slime!</Text>
+            <Text style={styles.namingSubtext}>Give your new companion a name</Text>
+
+            <TextInput
+              style={styles.nameInput}
+              value={slimeName}
+              onChangeText={setSlimeName}
+              placeholder="Enter slime name..."
+              placeholderTextColor="#9CA3AF"
+              maxLength={20}
+              autoFocus
+              onSubmitEditing={handleNameSubmit}
+            />
+
+            <Pressable
+              style={[styles.namingButton, !slimeName && styles.namingButtonDisabled]}
+              onPress={handleNameSubmit}
+            >
+              <Text style={styles.namingButtonText}>
+                {slimeName ? 'Create Slime' : 'Skip'}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    );
+  }
+
   // 2. If we are transitioning, show a sleek black screen so the camera hardware can reset
   if (viewMode === 'transitioning') {
     return (
@@ -205,28 +300,40 @@ export default function ScanTab() {
 
   // 1. If we are in AR mode, render ONLY Viro with strict flex: 1 styling
   if (viewMode === 'ar') {
-return (
-    <View style={styles.arContainer}> 
-      <ViroARSceneNavigator
-        autofocus={true}
-        initialScene={{ scene: SlimeARScene }}
-        style={StyleSheet.absoluteFillObject}
-        pbrEnabled={true}
-        hdrEnabled={true}
-        shadowsEnabled={true}
-      />
-      <Pressable 
-        style={styles.closeArButton} 
-        onPress={() => {
-          setViewMode('transitioning');
-          setTimeout(() => setViewMode('vision'), 500);
-          setDetectedObject(null);
-        }}
-      >
-        <Text style={styles.permissionButtonText}>Close AR</Text>
-      </Pressable>
-    </View>
-  );
+    return (
+      <View style={styles.arContainer}>
+        <ViroARSceneNavigator
+          autofocus={true}
+          initialScene={{ scene: SlimeARScene }}
+          style={StyleSheet.absoluteFillObject}
+          pbrEnabled={true}
+          hdrEnabled={true}
+          shadowsEnabled={true}
+        />
+
+        {/* LOADING SCREEN TO WAIT FOR EVERYTHING TO LOAD OR SPAWN WONT WORK */}
+        {showArLoading && (
+          <View style={styles.arLoadingOverlay}>
+            <View style={styles.arLoadingContent}>
+              <ActivityIndicator size="large" color="#7DFFA0" />
+              <Text style={styles.arLoadingText}>Preparing AR Experience</Text>
+              <Text style={styles.arLoadingSubtext}>Please wait...</Text>
+            </View>
+          </View>
+        )}
+
+        <Pressable
+          style={styles.closeArButton}
+          onPress={() => {
+            setViewMode('transitioning');
+            setTimeout(() => setViewMode('vision'), 500);
+            setDetectedObject(null);
+          }}
+        >
+          <Text style={styles.permissionButtonText}>Close AR</Text>
+        </Pressable>
+      </View>
+    );
   }
 
   // 3. Otherwise, render the normal Vision Camera scanner
@@ -282,9 +389,95 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#000",
   },
+  arLoadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(7, 11, 20, 0.95)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1000,
+  },
+  arLoadingContent: {
+    alignItems: "center",
+    padding: 40,
+    backgroundColor: "rgba(27, 42, 74, 0.8)",
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: "rgba(125, 255, 160, 0.3)",
+  },
+  arLoadingText: {
+    color: "#7DFFA0",
+    fontSize: 22,
+    fontWeight: "700",
+    marginTop: 20,
+    letterSpacing: 0.5,
+  },
+  arLoadingSubtext: {
+    color: "#E2E8F0",
+    fontSize: 16,
+    marginTop: 8,
+    opacity: 0.8,
+  },
+  namingContainer: {
+    flex: 1,
+    backgroundColor: "#070B14",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  namingCard: {
+    backgroundColor: "rgba(27, 42, 74, 0.95)",
+    borderRadius: 20,
+    padding: 30,
+    width: "90%",
+    maxWidth: 400,
+    borderWidth: 2,
+    borderColor: "rgba(125, 255, 160, 0.3)",
+    alignItems: "center",
+  },
+  namingTitle: {
+    color: "#7DFFA0",
+    fontSize: 28,
+    fontWeight: "700",
+    marginBottom: 10,
+    letterSpacing: 0.5,
+  },
+  namingSubtext: {
+    color: "#E2E8F0",
+    fontSize: 16,
+    marginBottom: 30,
+    opacity: 0.8,
+  },
+  nameInput: {
+    backgroundColor: "rgba(15, 22, 41, 0.8)",
+    borderWidth: 2,
+    borderColor: "rgba(125, 255, 160, 0.3)",
+    borderRadius: 12,
+    padding: 15,
+    fontSize: 18,
+    color: "#E2E8F0",
+    width: "100%",
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  namingButton: {
+    backgroundColor: "#7DFFA0",
+    paddingHorizontal: 30,
+    paddingVertical: 15,
+    borderRadius: 12,
+    width: "100%",
+    alignItems: "center",
+  },
+  namingButtonDisabled: {
+    backgroundColor: "rgba(125, 255, 160, 0.5)",
+  },
+  namingButtonText: {
+    color: "#070B14",
+    fontSize: 18,
+    fontWeight: "700",
+  },
   closeArButton: {
-    position: 'absolute', 
-    top: 60, 
+    position: 'absolute',
+    top: 60,
     left: 20,
     backgroundColor: "#7DFFA0",
     paddingHorizontal: 16,
