@@ -35,9 +35,9 @@ def infer_personality(object_class: str) -> Dict:
     return personality_map.get(object_class.lower(), personality_map["other"])
 
 def get_slime_type(object_class: str) -> str:
-    
+
     # Convert object class to slime type name.
-    
+
     type_map = {
         "book": "scholar",
         "food": "glutton",
@@ -46,6 +46,81 @@ def get_slime_type(object_class: str) -> str:
     }
 
     return type_map.get(object_class.lower(), "wanderer")
+
+def fuse_personalities(existing_personality: Dict, new_object_class: str) -> Dict:
+    """
+    Fuse existing slime personality with a new object class.
+    Creates hybrid interests and temperaments.
+
+    Example: food slime + book = slime interested in study cafes, matcha, performative reading
+    """
+    new_personality = infer_personality(new_object_class)
+
+    # Fusion mapping for hybrid interests
+    fusion_interests = {
+        ("snacks", "study"): "matcha and study snacks",
+        ("study", "snacks"): "matcha and study snacks",
+        ("snacks", "exercise"): "protein shakes and healthy eating",
+        ("exercise", "snacks"): "protein shakes and healthy eating",
+        ("study", "exercise"): "mindful movement and educational sports",
+        ("exercise", "study"): "mindful movement and educational sports",
+        ("snacks", "exploration"): "culinary adventures and food tours",
+        ("exploration", "snacks"): "culinary adventures and food tours",
+        ("study", "exploration"): "museums and cultural learning",
+        ("exploration", "study"): "museums and cultural learning",
+        ("exercise", "exploration"): "hiking and outdoor adventures",
+        ("exploration", "exercise"): "hiking and outdoor adventures",
+    }
+
+    # Fusion mapping for hybrid temperaments
+    fusion_temperaments = {
+        ("social", "quiet"): "thoughtful",
+        ("quiet", "social"): "thoughtful",
+        ("social", "energetic"): "enthusiastic",
+        ("energetic", "social"): "enthusiastic",
+        ("quiet", "energetic"): "focused",
+        ("energetic", "quiet"): "focused",
+        ("social", "curious"): "friendly",
+        ("curious", "social"): "friendly",
+        ("quiet", "curious"): "observant",
+        ("curious", "quiet"): "observant",
+        ("energetic", "curious"): "adventurous",
+        ("curious", "energetic"): "adventurous",
+    }
+
+    # Fusion mapping for hybrid preferred places
+    fusion_places = {
+        ("snacks", "study"): ["study cafe", "matcha bar", "quiet tea house"],
+        ("study", "snacks"): ["study cafe", "matcha bar", "quiet tea house"],
+        ("snacks", "exercise"): ["juice bar", "healthy cafe", "smoothie shop"],
+        ("exercise", "snacks"): ["juice bar", "healthy cafe", "smoothie shop"],
+        ("study", "exercise"): ["yoga studio", "meditation center", "wellness center"],
+        ("exercise", "study"): ["yoga studio", "meditation center", "wellness center"],
+        ("snacks", "exploration"): ["food market", "street food area", "international restaurant"],
+        ("exploration", "snacks"): ["food market", "street food area", "international restaurant"],
+        ("study", "exploration"): ["museum", "library", "cultural center"],
+        ("exploration", "study"): ["museum", "library", "cultural center"],
+        ("exercise", "exploration"): ["hiking trail", "outdoor park", "nature reserve"],
+        ("exploration", "exercise"): ["hiking trail", "outdoor park", "nature reserve"],
+    }
+
+    existing_interest = existing_personality.get("interest", "exploration")
+    new_interest = new_personality.get("interest", "exploration")
+    interest_key = (existing_interest, new_interest)
+
+    existing_temperament = existing_personality.get("temperament", "curious")
+    new_temperament = new_personality.get("temperament", "curious")
+    temperament_key = (existing_temperament, new_temperament)
+
+    # Create fused personality
+    fused = {
+        "temperament": fusion_temperaments.get(temperament_key, "adaptable"),
+        "interest": fusion_interests.get(interest_key, f"{existing_interest} and {new_interest}"),
+        "preferred_places": fusion_places.get(interest_key,
+            existing_personality.get("preferred_places", []) + new_personality.get("preferred_places", []))
+    }
+
+    return fused
 
 def generate_random_event(slime_type: str, personality: Dict) -> Tuple[str, str]:
     
